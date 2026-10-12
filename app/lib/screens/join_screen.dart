@@ -136,7 +136,7 @@ class _JoinScreenState extends State<JoinScreen> {
                   '-Videos erfasst. Diese Daten sind nur für dein eigenes '
                   'Team und die Organisation sichtbar – nicht für andere '
                   'Teilnehmer. Nach dem Event kannst du im Team verlangen, '
-                  'dass die Daten gelöscht werden.'
+                  'dass die Daten gelöscht werden.',
                   style: TextStyle(fontSize: 12),
                 ),
               ),

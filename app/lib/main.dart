@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 
@@ -71,8 +72,9 @@ class StepByStepApp extends StatelessWidget {
       locale: const Locale('de', 'DE'),
       supportedLocales: const [Locale('de', 'DE')],
       localizationsDelegates: const [
-        DefaultMaterialLocalizations.delegate,
-        DefaultWidgetsLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
       ],
       theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.green),
       home: const RootGate(),

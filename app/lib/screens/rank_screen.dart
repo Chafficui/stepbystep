@@ -41,6 +41,7 @@ class _RankScreenState extends State<RankScreen> {
     });
     try {
       final token = widget.token ?? await AppServices.instance.session.token;
+      if (token == null) throw StateError('Kein Token vorhanden.');
       final result = await _api.getMyRank(token);
       if (!mounted) return;
       setState(() {

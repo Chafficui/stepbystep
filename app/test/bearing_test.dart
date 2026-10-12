@@ -13,7 +13,7 @@ void main() {
     });
 
     test('Osten = 90', () {
-      final b = Geo.bearingDeg(52.0, 13.0, 52.0, 14.0);
+      final b = Geo.bearingDeg(0.0, 13.0, 0.0, 14.0);
       expect(b, closeTo(90, 0.001));
     });
 
@@ -23,19 +23,19 @@ void main() {
     });
 
     test('Westen = 270', () {
-      final b = Geo.bearingDeg(52.0, 13.0, 52.0, 12.0);
+      final b = Geo.bearingDeg(0.0, 13.0, 0.0, 12.0);
       expect(b, closeTo(270, 0.001));
     });
 
     test('Diagonale Nordost = 45', () {
-      // Auf dem Äquator ist 1° breite = 1° Länge exakt 45°.
+      // Am Äquator ergibt 1° Breite / 1° Länge fast genau 45° (Großkreis).
       final b = Geo.bearingDeg(0.0, 0.0, 1.0, 1.0);
-      expect(b, closeTo(45, 0.001));
+      expect(b, closeTo(45, 0.01));
     });
 
     test('Diagonale Südwest = 225', () {
       final b = Geo.bearingDeg(0.0, 0.0, -1.0, -1.0);
-      expect(b, closeTo(225, 0.001));
+      expect(b, closeTo(225, 0.01));
     });
 
     test('Ergebnis immer in [0, 360)', () {

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/foundation.dart';
 
 import '../api/api_client.dart';
 import '../db/app_database.dart';

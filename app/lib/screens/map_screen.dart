@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:drift/drift.dart' show OrderingTerm;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:latlong2/latlong.dart' hide Path;
 
 import '../core/geo.dart';
-import '../db/app_database.dart';
 import '../models/event_config.dart';
 import '../state/services.dart';
 import '../tracking/tracking_service.dart';

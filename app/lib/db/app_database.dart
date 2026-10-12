@@ -59,7 +59,7 @@ class PendingAlerts extends Table {
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
-  AppDatabase.connect(DatabaseConnection connection) : super.connect(connection);
+  AppDatabase.connect(super.connection);
 
   @override
   int get schemaVersion => 1;
