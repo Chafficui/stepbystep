@@ -1,0 +1,10 @@
+{$DOMAIN} {
+  encode zstd gzip
+  reverse_proxy api:8080
+  # request body limits: Fastify enforces 1MB JSON / 20MB upload
+  header {
+    X-Content-Type-Options nosniff
+    Referrer-Policy no-referrer
+    -Server
+  }
+}

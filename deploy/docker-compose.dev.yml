@@ -1,0 +1,40 @@
+# Dev-Compose: Nur für lokale Tests; die App spricht in Release-Builds ausschließlich HTTPS.
+# Kein Caddy, kein TLS, kein Domain — die API ist direkt unter http://localhost:8080 erreichbar.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: stepbystep
+    ports:
+      - "5433:5432" # für direkte Inspektion mit psql/pgAdmin
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d stepbystep"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    build: ../server
+    environment:
+      PORT: 8080
+      DATABASE_URL: postgres://dev:dev@db:5432/stepbystep
+      ORGA_PASSWORD: dev
+      ORGA_SESSION_SECRET: dev-secret-not-for-production
+      UPLOAD_DIR: /data/uploads
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../dashboard:/app/dashboard:ro
+      - ./dev_uploads:/data/uploads # Uploads liegen sichtbar im Repo-Ordner deploy/dev_uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  db_data:
