@@ -534,4 +534,52 @@ d('feature routes', () => {
     expect(byId.get(teamB.teamId)).toMatchObject({ silent: false, checkin_overdue: false, speeding: false });
     expect(byId.get(teamC.teamId)).toMatchObject({ silent: false, checkin_overdue: true, speeding: true });
   });
+
+  it('overview hints: speeding detected across a slow continuous track (six points, 3 min apart)', async () => {
+    const teamD = await createJoinedTeam('Hint D', '44');
+    await app.inject({
+      method: 'PUT',
+      url: '/api/orga/event',
+      headers: { authorization: `Bearer ${await loginOrga()}` },
+      payload: {
+        start_lat: 52.52,
+        start_lng: 13.405,
+        start_time: new Date(Date.now() - 41 * 60_000).toISOString(),
+        silence_alarm_min: 10,
+        checkin_interval_min: 30,
+        checkin_window_min: 10,
+      },
+    });
+    // Six points, 3 minutes apart, spanning 15+ min, ~14 km/h average:
+    // 0.0063 deg lat per 3 min ≈ 0.7 km per 3 min. The 15-min window over all
+    // points averages ~14 km/h (> 12 km/h) -> flagged.
+    const values: unknown[] = [];
+    const rows: string[] = [];
+    for (let k = 0; k < 6; k++) {
+      const base = k * 4;
+      values.push(
+        randomUUID(),
+        teamD.teamId,
+        teamD.participantId,
+        52.50 + 0.0063 * k,
+        13.405,
+        5,
+        new Date(Date.now() - (18 - 3 * k) * 60_000).toISOString()
+      );
+      rows.push(`($${base + 1},$${base + 2},$${base + 3},$${base + 4},$${base + 5},$${base + 6},$${base + 7})`);
+    }
+    await query(
+      `INSERT INTO location_point (id, team_id, participant_id, lat, lng, accuracy, recorded_at) VALUES ${rows.join(', ')}`,
+      values
+    );
+    const overview = await app.inject({
+      method: 'GET',
+      url: '/api/orga/overview',
+      headers: { authorization: `Bearer ${await loginOrga()}` },
+    });
+    expect(overview.statusCode).toBe(200);
+    const teams = (overview.json() as { teams: { id: string; hints: Record<string, boolean> }[] }).teams;
+    const byId = new Map(teams.map((t) => [t.id, t.hints]));
+    expect(byId.get(teamD.teamId)).toMatchObject({ silent: false, speeding: true });
+  });
 });
