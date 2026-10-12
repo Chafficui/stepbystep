@@ -81,6 +81,16 @@ class AppDatabase extends _$AppDatabase {
       (update(points)..where((t) => t.id.isIn(ids)))
           .write(PointsCompanion(sentAt: Value(DateTime.now().millisecondsSinceEpoch)));
 
+  /// Letzter (gesendeter oder ungesendeter) Punkt — als Startwert für den
+  /// Sampler nach App-Restart.
+  Future<Point?> lastPoint() async {
+    final rows = await (select(points)
+          ..orderBy([(u) => OrderingTerm.desc(u.recordedAt)])
+          ..limit(1))
+        .get();
+    return rows.isEmpty ? null : rows.first;
+  }
+
   Future<int> unsentPointCount() =>
       unsentPoints(limit: 100000).then((rows) => rows.length);
 

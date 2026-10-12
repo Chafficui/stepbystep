@@ -35,8 +35,15 @@ export async function joinRoutes(app: FastifyInstance): Promise<void> {
       const teamRow = team.rows[0];
 
       // Idempotent re-join: existing device gets a fresh token for the same participant.
-      const existing = await query<{ id: string; display_name: string }>(
-        'SELECT id, display_name FROM participant WHERE device_id = $1',
+      const existing = await query<{
+        id: string;
+        display_name: string;
+        team_id: string;
+        team_name: string;
+      }>(
+        `SELECT p.id, p.display_name, p.team_id, t.name AS team_name
+         FROM participant p JOIN team t ON t.id = p.team_id
+         WHERE p.device_id = $1`,
         [device_id]
       );
       const token = randomBytes(32).toString('hex');
@@ -48,8 +55,8 @@ export async function joinRoutes(app: FastifyInstance): Promise<void> {
         ]);
         void reply.send({
           token,
-          team_id: teamRow.id,
-          team_name: teamRow.name,
+          team_id: participant.team_id,
+          team_name: participant.team_name,
           display_name: participant.display_name,
         });
         return;

@@ -83,6 +83,21 @@ void main() {
       expect(times, [start.add(const Duration(minutes: 30)), start.add(const Duration(minutes: 60))]);
     });
 
+    test('Event kürzer als ein Intervall -> keine Erinnerungen', () {
+      final cfg = EventConfig(
+        name: 'Test',
+        revealTime: start,
+        startTime: start,
+        durationH: 1,
+        endTime: start.add(const Duration(minutes: 20)), // < 30 min Intervall
+        checkinIntervalMin: 30,
+        checkinWindowMin: 5,
+        orgaPhone: '+49',
+        serverNow: start,
+      );
+      expect(SlotCalc.reminderTimes(cfg), isEmpty);
+    });
+
     test('leer bei ungültigem Intervall', () {
       final cfg = EventConfig(
         name: 'Test',

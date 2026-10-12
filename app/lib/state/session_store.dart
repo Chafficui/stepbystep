@@ -20,6 +20,9 @@ class SessionStore {
   static const _kDisplayName = 'display_name';
   static const _kTrackingActive = 'tracking_active';
   static const _kBatteryWarnShown = 'battery_warning_shown';
+  static const _kBatteryWarn20Shown = 'battery_warning_20_shown';
+  static const _kBatteryWarn10Shown = 'battery_warning_10_shown';
+  static const _kReminderFingerprint = 'reminder_fingerprint';
 
   final FlutterSecureStorage _secure;
   SharedPreferences? _prefs;
@@ -89,5 +92,32 @@ class SessionStore {
 
   Future<void> setBatteryWarningShown(bool value) async {
     await (await _sharedPrefs).setBool(_kBatteryWarnShown, value);
+  }
+
+  /// Akku-Warnung < 20 % schon gezeigt? (jede Stufe nur EINMAL pro Event)
+  Future<bool> getBatteryWarn20Shown() async {
+    return (await _sharedPrefs).getBool(_kBatteryWarn20Shown) ?? false;
+  }
+
+  Future<void> setBatteryWarn20Shown(bool value) async {
+    await (await _sharedPrefs).setBool(_kBatteryWarn20Shown, value);
+  }
+
+  /// Akku-Warnung < 10 % schon gezeigt?
+  Future<bool> getBatteryWarn10Shown() async {
+    return (await _sharedPrefs).getBool(_kBatteryWarn10Shown) ?? false;
+  }
+
+  Future<void> setBatteryWarn10Shown(bool value) async {
+    await (await _sharedPrefs).setBool(_kBatteryWarn10Shown, value);
+  }
+
+  /// Fingerprint der zuletzt eingeplanten Check-in-Erinnerungen
+  /// (siehe [ReminderScheduler.syncWithConfig]).
+  Future<String?> getReminderFingerprint() async =>
+      (await _sharedPrefs).getString(_kReminderFingerprint);
+
+  Future<void> setReminderFingerprint(String value) async {
+    await (await _sharedPrefs).setString(_kReminderFingerprint, value);
   }
 }

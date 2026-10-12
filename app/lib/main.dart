@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
@@ -5,13 +7,57 @@ import 'package:intl/intl.dart';
 import 'config/api_config.dart';
 import 'screens/join_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'state/services.dart';
 import 'state/session_store.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   initializeDateFormatting('de_DE', null);
   Intl.defaultLocale = 'de_DE';
+  AppServices.onAuthExpired = _handleAuthExpired;
+  unawaited(_bootstrap());
   runApp(const StepByStepApp());
+}
+
+/// Service-Start + Auto-Resume: Upload-Service läuft, sobald der Prozess
+/// lebt; Tracking wird fortgesetzt, wenn `tracking_active` noch gesetzt war.
+Future<void> _bootstrap() async {
+  final services = await AppServices.init();
+  services.upload.start();
+
+  final active = await services.session.getTrackingActive();
+  final hasSession = await services.session.hasSession();
+  if (active && hasSession) {
+    // Still fortsetzen (auch ohne geöffneten Event-Screen).
+    await services.tracking.start();
+  }
+}
+
+/// 401 vom Server: zurück zum Join-Screen. Die drift-Datenbank und
+/// ausstehende Medien bleiben bewusst erhalten.
+void _handleAuthExpired() {
+  final nav = navigatorKey.currentState;
+  if (nav == null) return;
+  final store = AppServices.instance.session;
+  nav.pushAndRemoveUntil(
+    MaterialPageRoute<void>(
+      builder: (_) => JoinScreen(
+        sessionStore: store,
+        onJoined: () {
+          AppServices.instance.upload.resume();
+          nav.pushAndRemoveUntil(
+            MaterialPageRoute<void>(
+              builder: (_) => OnboardingScreen(sessionStore: store),
+            ),
+            (route) => false,
+          );
+        },
+      ),
+    ),
+    (route) => false,
+  );
 }
 
 class StepByStepApp extends StatelessWidget {
@@ -21,6 +67,7 @@ class StepByStepApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Schritt für Schritt',
+      navigatorKey: navigatorKey,
       locale: const Locale('de', 'DE'),
       supportedLocales: const [Locale('de', 'DE')],
       localizationsDelegates: const [
@@ -109,4 +156,3 @@ class MissingConfigScreen extends StatelessWidget {
     );
   }
 }
-

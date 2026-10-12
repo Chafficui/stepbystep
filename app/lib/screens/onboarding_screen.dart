@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../services/battery_optimization.dart';
 import '../state/session_store.dart';
 import 'event_screen.dart';
 
@@ -101,8 +102,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   Future<void> _requestBattery() async {
-    // Android: Battery-Optimierung per System-Intent ausnehmen.
-    await Geolocator.openAppSettings();
+    // Android: Battery-Optimierung per System-Intent ausnehmen (Method-
+    // Channel); falls das fehlschlägt, Fallback in die App-Einstellungen.
+    final ok = await BatteryOptimization.requestIgnoreBatteryOptimizations();
+    if (!ok) await Geolocator.openAppSettings();
     await _refresh();
   }
 
