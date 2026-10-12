@@ -1,0 +1,13 @@
+# Der Build-Kontext ist das Wurzelverzeichnis (siehe Dockerfile), also wird
+# alles ausgeschlossen, was das Image nicht braucht — vor allem die
+# Flutter-App, die sonst mit ihren Build-Artefakten an den Docker-Daemon
+# geschickt wird, ohne dass eine einzige Datei daraus im Image landet.
+app/
+scripts/
+deploy/
+.git/
+*.md
+
+server/node_modules/
+server/dist/
+node_modules/

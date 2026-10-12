@@ -15,7 +15,13 @@ services:
     restart: unless-stopped
 
   api:
-    build: ../server
+    # EIN Dockerfile fuer beide Wege (hier und codai up): es liegt im
+    # Wurzelverzeichnis, weil nur von dort das Dashboard in das Image kopiert
+    # werden kann. Vorher lag es in server/, und das Dashboard kam per
+    # Host-Mount dazu — was ausserhalb dieses Compose nicht funktioniert.
+    build:
+      context: ..
+      dockerfile: Dockerfile
     environment:
       PORT: 8080
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
@@ -24,7 +30,9 @@ services:
       UPLOAD_DIR: /data/uploads
       DASHBOARD_DIR: /app/dashboard
     volumes:
-      - ../dashboard:/app/dashboard:ro
+      # Das Dashboard liegt im Image; der frueher hier stehende Mount
+      # (../dashboard:/app/dashboard:ro) wuerde es nur durch dieselbe Datei
+      # ersetzen und faellt damit weg.
       - uploads:/data/uploads
     depends_on:
       db:
