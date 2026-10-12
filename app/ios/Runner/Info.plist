@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>de</string>
+	<key>CFBundleDisplayName</key>
+	<string>Schritt für Schritt</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>stepbystep_app</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<!-- Hintergrund-Ortung für das Tracking -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Die App benötigt deinen Standort, um deine Route während des Walking-Events aufzuzeichnen und deinem Team sowie der Organisation zu zeigen, wo du unterwegs bist.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Damit die Aufzeichnung auch bei gesperrtem Bildschirm weiterläuft, benötigt die App den Standort-Zugriff „Immer". Die Daten sind nur für dein Team und die Organisation sichtbar.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Die Kamera wird für Foto-Check-ins während des Events benötigt.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Das Mikrofon wird für Video-Check-ins mit Ton benötigt.</string>
+	<!-- Nur für lokale Entwicklung: Verbindungen zu localhost/dev-Servern.
+		 Keine allgemeine HTTP-Ausnahme! -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+</dict>
+</plist>
