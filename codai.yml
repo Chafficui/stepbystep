@@ -1,0 +1,42 @@
+# stepbystep auf codai up: API plus Orga-Dashboard, Postgres als Addon.
+#
+# WAS HIER NICHT STEHT UND WARUM: deploy/docker-compose.yml bringt db, api UND
+# caddy mit, weil es fuer einen leeren VPS gedacht ist. Auf up stellt die
+# Plattform beides schon: Caddy steht mit Let's-Encrypt-Zertifikat davor, und
+# `addons: postgres` bringt die Datenbank samt Volume. Uebrig bleibt der eine
+# Dienst, der die Anwendung ist.
+#
+# Die Migrationen laufen beim Start (server/src/index.ts ruft migrate() vor
+# listen()), es gibt also keinen separaten Schritt und keinen Zeitpunkt, an dem
+# die API ohne Tabellen antwortet.
+
+services:
+  server:
+    # Kontext ist das Wurzelverzeichnis, damit das Dashboard mit ins Image
+    # kommt — siehe die Begruendung im Dockerfile.
+    build: .
+    # Der Port aus dem Dockerfile. up setzt PORT im Container auf denselben
+    # Wert, und der Server liest ihn.
+    port: 8080
+    env:
+      DATABASE_URL: ${postgres.url}
+      # Der Upload-Pfad im Container, passend zum Volume unten. Fotos und
+      # Videos der Check-ins liegen dort.
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      # ueberlebt einen Deploy: ein Check-in-Foto ist nicht reproduzierbar.
+      uploads: /data/uploads
+    # Node mit pg und einem Fastify-Prozess; 512m sind reichlich, aber Uploads
+    # werden gepuffert, deshalb nicht knapper.
+    memory: 512m
+
+# Neben `services`, nicht darunter — parseAddons liest die oberste Ebene.
+addons:
+  postgres: "16"
+
+# NICHT HIER, sondern als Secrets im Dashboard (up setzt sie als Umgebung):
+#   ORGA_PASSWORD         Dashboard-Login der Orga
+#   ORGA_SESSION_SECRET   Sitzungsschluessel, mindestens 32 Byte
+# Der Server beendet sich beim Start mit einer klaren Meldung, wenn eines
+# davon fehlt (server/src/config.ts, requireEnv) — besser als ein Dashboard
+# mit leerem Passwort.
