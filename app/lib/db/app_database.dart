@@ -91,8 +91,14 @@ class AppDatabase extends _$AppDatabase {
     return rows.isEmpty ? null : rows.first;
   }
 
-  Future<int> unsentPointCount() =>
-      unsentPoints(limit: 100000).then((rows) => rows.length);
+  Future<int> unsentPointCount() async {
+    final countExp = points.id.count();
+    final query = selectOnly(points)
+      ..addColumns([countExp])
+      ..where(points.sentAt.isNull());
+    final row = await query.getSingle();
+    return row.read(countExp) ?? 0;
+  }
 
   // --- PendingCheckins ---
 
