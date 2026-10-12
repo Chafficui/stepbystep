@@ -20,6 +20,8 @@
 | App-Toolchain | App-Projekt ohne Flutter-Toolchain handgeschrieben und deshalb nicht lokal analysiert; erster Schritt beim Menschen ist `flutter create .` + `build_runner` | Ehrliche Trennung: „automatisiert getestet" (Server-Unit-Tests) vs. „nur gebaut/analysiert" (App, Integrationstests) vs. „ungetestet" (Geräte/VPS). |
 | Uhrzeit-Drift | Drift >60 s erzeugt nur eine Warnung („Uhrzeit des Handys prüfen"), keine Blockierung | Blockieren könnte Teilnehmer im Feld aussperren. |
 | Server-Integrationstests | Laufen nur mit Docker (in der Build-Umgebung nicht verfügbar, daher übersprungen) | Die Testsuite ist vollständig vorhanden und muss auf dem VPS/einer Docker-Maschine einmal ausgeführt werden. |
+| Referrer-Policy | `strict-origin-when-cross-origin` statt `no-referrer` (Server-Header und Caddyfile) | OSM-Kachelserver verlangen eine Identifizierung per Referer oder User-Agent und blocken ohne Referer („usage policy") — Origin statt voller URL genügt. |
+| Ranking leer | `GET /api/orga/ranking` liefert bei leerer Rangliste `200` mit `computed_at: null` statt `404` | Verhindert wiederkehrende Konsolen-Fehler beim Laden des Dashboards; semantisch keine Abwesenheit einer Ressource. |
 
 ## Offene Punkte / bekannte Einschränkungen
 

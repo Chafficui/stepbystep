@@ -423,6 +423,16 @@ d('feature routes', () => {
     expect((latest.json() as { computed_at: string }).computed_at).toBe(body.computed_at);
   });
 
+  it('ranking: GET returns 200 with nulls when no snapshot exists', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/orga/ranking',
+      headers: { authorization: `Bearer ${await loginOrga()}` },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ computed_at: null, is_final: false, entries: [] });
+  });
+
   it('alerts: sos + abort; abort marks team aborted; resolve works; overview lists alerts', async () => {
     const teamA = await createJoinedTeam('Alert A', '11');
     const orgaToken = await loginOrga();

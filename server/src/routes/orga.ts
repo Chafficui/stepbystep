@@ -635,7 +635,7 @@ export async function orgaRoutes(app: FastifyInstance): Promise<void> {
        ORDER BY r.rank, t.name`
     );
     if (rows.length === 0) {
-      void reply.code(404).send({ error: 'Noch keine Rangliste' });
+      void reply.send({ computed_at: null, is_final: false, entries: [] });
       return;
     }
     void reply.send({
