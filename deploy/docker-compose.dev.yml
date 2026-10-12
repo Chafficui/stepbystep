@@ -26,6 +26,7 @@ services:
       ORGA_PASSWORD: dev
       ORGA_SESSION_SECRET: dev-secret-not-for-production
       UPLOAD_DIR: /data/uploads
+      DASHBOARD_DIR: /app/dashboard
     ports:
       - "8080:8080"
     volumes:

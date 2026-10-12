@@ -22,6 +22,7 @@ services:
       ORGA_PASSWORD: ${ORGA_PASSWORD}
       ORGA_SESSION_SECRET: ${ORGA_SESSION_SECRET}
       UPLOAD_DIR: /data/uploads
+      DASHBOARD_DIR: /app/dashboard
     volumes:
       - ../dashboard:/app/dashboard:ro
       - uploads:/data/uploads

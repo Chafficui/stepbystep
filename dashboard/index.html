@@ -184,6 +184,7 @@ function minutesAgo(minutes) {
 var token = sessionStorage.getItem("orgaToken") || null;
 var pollTimer = null;
 var knownAlertIds = {};   // id -> true (already seen unresolved)
+var knownAlertsSeeded = false; // erste Aktualisierung: Bestandsalarme still übernehmen
 var titleBlinkTimer = null;
 var trackCache = {};      // teamId -> {points: [...], layer: polyline}
 var markers = {};         // teamId -> marker
@@ -309,9 +310,10 @@ function renderAlarms(alerts) {
 
   var fresh = null;
   open.forEach(function (a) {
-    if (!knownAlertIds[a.id]) fresh = fresh || a;
+    if (!knownAlertIds[a.id] && knownAlertsSeeded) fresh = fresh || a;
     knownAlertIds[a.id] = true;
   });
+  knownAlertsSeeded = true;
   if (fresh) onNewAlarm();
 
   if (!open.length) {
@@ -349,7 +351,8 @@ function renderAlarms(alerts) {
     done.addEventListener("click", function () {
       done.disabled = true;
       api("/api/orga/alerts/" + encodeURIComponent(a.id) + "/resolve", { method: "POST" })
-        .then(function () { stopTitleBlink(); return refresh(); })
+        .then(function () { return refresh(); })
+        // stopTitleBlink passiert in renderAlarms, falls danach keine offenen Alarme mehr bleiben
         .catch(function (err) {
           if (err.message !== "Nicht angemeldet") showTransientErr(list, err.message);
           done.disabled = false;
@@ -472,8 +475,8 @@ function renderTeams(teams) {
     tr.appendChild(st);
     tr.appendChild(el("td", null, minutesAgo(t.minutes_since_last_point)));
     var batt = el("td");
-    var battVal = t.last_point && t.last_point.battery != null ? Math.round(t.last_point.battery) + " %" : "–";
-    if (t.last_point && t.last_point.battery != null && t.last_point.battery < 20) batt.className = "battery low";
+    var battVal = t.battery != null ? Math.round(t.battery) + " %" : "–";
+    if (t.battery != null && t.battery < 20) batt.className = "battery low";
     batt.textContent = battVal;
     tr.appendChild(batt);
     var ci = el("td");
@@ -621,6 +624,10 @@ function openCheckins(team) {
 function loadMedia(holder, c) {
   fetch("/api/orga/media/" + encodeURIComponent(c.id), { headers: { "Authorization": "Bearer " + token } })
     .then(function (res) {
+      if (res.status === 401) {
+        logout(false);
+        throw new Error("Nicht angemeldet");
+      }
       if (!res.ok) throw new Error("Fehler (" + res.status + ")");
       return res.blob();
     })
