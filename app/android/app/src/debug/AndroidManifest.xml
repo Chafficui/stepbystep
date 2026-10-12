@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Nur DEBUG-Builds: Klartext-HTTP erlaubt, damit die App gegen
+         einen lokalen Dev-Server (http://10.0.2.2:8080 etc.) getestet
+         werden kann. Release-Builds bleiben HTTPS-only (siehe
+         src/main/AndroidManifest.xml: usesCleartextTraffic="false"). -->
+    <application android:usesCleartextTraffic="true" />
+</manifest>
