@@ -94,7 +94,7 @@ export async function orgaRoutes(app: FastifyInstance): Promise<void> {
   app.put('/orga/event', async (request, reply) => {
     const parsed = orgaEventUpdate.safeParse(request.body);
     if (!parsed.success) {
-      void reply.code(400).send({ error: 'Ungültige Eingabe' });
+      void reply.code(400).send({ error: 'Ungültige Eingabe: ' + parsed.error.issues.map((i) => i.path.join('.')).join(', ') });
       return;
     }
     const data = parsed.data;

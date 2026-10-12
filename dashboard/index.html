@@ -45,6 +45,8 @@
   .form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; }
   .form-grid label { display:flex; flex-direction:column; font-size:12px; color:#5a6478; gap:4px; }
   .form-grid input { padding:8px; border:1px solid #c9d0dd; border-radius:6px; font-size:14px; }
+  .form-grid input[aria-invalid="true"] { border-color:#b42318; background:#fdf3f3; }
+  .field-err { color:#b42318; font-size:11px; }
   .msg { padding:8px 10px; border-radius:6px; font-size:13px; margin:8px 0; }
   .msg.err { background:#fdecec; color:#b42318; }
   .msg.ok { background:#e6f6ec; color:#0a7d34; }
@@ -121,18 +123,18 @@
     <section class="card">
       <h2>Event-Einstellungen</h2>
       <form id="eventForm" class="form-grid">
-        <label>Name <input name="name" type="text"></label>
-        <label>Start-Breitengrad <input name="start_lat" type="number" step="any"></label>
-        <label>Start-Längengrad <input name="start_lng" type="number" step="any"></label>
-        <label>Aufdeckungszeit (UTC, ISO) <input name="reveal_time" type="text" placeholder="2026-01-01T10:00:00Z"></label>
-        <label>Startzeit (UTC, ISO) <input name="start_time" type="text"></label>
-        <label>Dauer (h) <input name="duration_h" type="number" step="0.5"></label>
-        <label>Endzeit (UTC, ISO) <input name="end_time" type="text"></label>
-        <label>Check-in-Intervall (min) <input name="checkin_interval_min" type="number"></label>
-        <label>Check-in-Fenster (min) <input name="checkin_window_min" type="number"></label>
-        <label>Stummalarm (min) <input name="silence_alarm_min" type="number"></label>
-        <label>Tempo-Schwellwert (km/h) <input name="speed_flag_kmh" type="number"></label>
-        <label>Orga-Telefon <input name="orga_phone" type="text"></label>
+        <label>Name <input name="name" type="text"><span class="field-err" data-err-for="name"></span></label>
+        <label>Start-Breitengrad <input name="start_lat" type="number" step="any"><span class="field-err" data-err-for="start_lat"></span></label>
+        <label>Start-Längengrad <input name="start_lng" type="number" step="any"><span class="field-err" data-err-for="start_lng"></span></label>
+        <label>Aufdeckungszeit <input name="reveal_time" type="datetime-local"><span class="field-err" data-err-for="reveal_time"></span></label>
+        <label>Startzeit <input name="start_time" type="datetime-local"><span class="field-err" data-err-for="start_time"></span></label>
+        <label>Dauer (h) <input name="duration_h" type="number" step="1"><span class="field-err" data-err-for="duration_h"></span></label>
+        <label>Endzeit <input name="end_time_display" type="text" readonly></label>
+        <label>Check-in-Intervall (min) <input name="checkin_interval_min" type="number" step="1"><span class="field-err" data-err-for="checkin_interval_min"></span></label>
+        <label>Check-in-Fenster (min) <input name="checkin_window_min" type="number" step="1"><span class="field-err" data-err-for="checkin_window_min"></span></label>
+        <label>Stummalarm (min) <input name="silence_alarm_min" type="number" step="1"><span class="field-err" data-err-for="silence_alarm_min"></span></label>
+        <label>Tempo-Schwellwert (km/h) <input name="speed_flag_kmh" type="number" step="any"><span class="field-err" data-err-for="speed_flag_kmh"></span></label>
+        <label>Orga-Telefon <input name="orga_phone" type="text"><span class="field-err" data-err-for="orga_phone"></span></label>
       </form>
       <div id="eventMsg"></div>
       <button class="btn" type="button" id="saveEventBtn" style="margin-top:10px;">Speichern</button>
@@ -698,27 +700,138 @@ document.getElementById("rankFinalBtn").addEventListener("click", function () { 
 /* ---------- event settings ---------- */
 
 var EVENT_FIELDS = ["name", "start_lat", "start_lng", "reveal_time", "start_time", "duration_h",
-  "end_time", "checkin_interval_min", "checkin_window_min", "silence_alarm_min", "speed_flag_kmh", "orga_phone"];
+  "checkin_interval_min", "checkin_window_min", "silence_alarm_min", "speed_flag_kmh", "orga_phone"];
 
+function pad2(n) {
+  return String(n).length < 2 ? "0" + n : String(n);
+}
+function utcToLocalInputValue(iso) {
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) +
+    "T" + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+}
+function localInputValueToUtcIso(v) {
+  // "YYYY-MM-DDTHH:MM" in the browser's local timezone -> ISO-8601 UTC with Z
+  var d = new Date(v);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+function eventFieldErrEl(field) {
+  return document.querySelector('.field-err[data-err-for="' + field + '"]');
+}
+function isInt(v) {
+  return Number.isInteger(v);
+}
+function updateEndTimeDisplay() {
+  var form = document.getElementById("eventForm");
+  var start = form.elements["start_time"].value;
+  var dur = form.elements["duration_h"].value;
+  var out = form.elements["end_time_display"];
+  if (start === "" || dur === "") { out.value = ""; return; }
+  var sd = new Date(start);
+  var h = parseFloat(dur);
+  if (isNaN(sd.getTime()) || isNaN(h)) { out.value = ""; return; }
+  out.value = utcToLocalInputValue(new Date(sd.getTime() + h * 3600 * 1000).toISOString());
+}
+function validateEventField(field) {
+  var form = document.getElementById("eventForm");
+  var input = form.elements[field];
+  if (!input) return true;
+  var v = input.value.trim();
+  var err = null;
+  var num = parseFloat(v);
+  if (field === "name") {
+    if (v.length < 1 || v.length > 120) err = "1–120 Zeichen erforderlich.";
+  } else if (field === "start_lat" || field === "start_lng") {
+    var other = form.elements[field === "start_lat" ? "start_lng" : "start_lat"];
+    var otherv = other.value.trim();
+    if (v !== "" || otherv !== "") {
+      if (v === "" || otherv === "") {
+        err = "Breiten- und Längengrad müssen gemeinsam gesetzt sein.";
+      } else if (isNaN(num)) {
+        err = "Muss eine Zahl sein.";
+      } else if (field === "start_lat" && (num < -90 || num > 90)) {
+        err = "Wert muss zwischen -90 und 90 liegen.";
+      } else if (field === "start_lng" && (num < -180 || num > 180)) {
+        err = "Wert muss zwischen -180 und 180 liegen.";
+      }
+    }
+  } else if (field === "reveal_time") {
+    if (v !== "" && isNaN(new Date(v).getTime())) err = "Ungültiges Datum.";
+  } else if (field === "start_time") {
+    if (v === "") err = "Startzeit ist erforderlich.";
+    else if (isNaN(new Date(v).getTime())) err = "Ungültiges Datum.";
+  } else if (field === "duration_h") {
+    if (v === "") err = "Erforderlich.";
+    else if (!isInt(num) || num < 1 || num > 72) err = "Ganze Zahl zwischen 1 und 72.";
+  } else if (field === "checkin_interval_min" || field === "checkin_window_min" || field === "silence_alarm_min") {
+    if (v === "") err = "Erforderlich.";
+    else if (!isInt(num) || num < 10 || num > 1440) err = "Ganze Zahl zwischen 10 und 1440.";
+  } else if (field === "speed_flag_kmh") {
+    if (v === "") err = "Erforderlich.";
+    else if (isNaN(num) || num < 0 || num > 100) err = "Wert zwischen 0 und 100.";
+  } else if (field === "orga_phone") {
+    if (v.length > 40) err = "Maximal 40 Zeichen.";
+  }
+  var errEl = eventFieldErrEl(field);
+  if (errEl) errEl.textContent = err || "";
+  if (err) input.setAttribute("aria-invalid", "true");
+  else input.removeAttribute("aria-invalid");
+  return !err;
+}
+function validateAllEventFields() {
+  var ok = true;
+  EVENT_FIELDS.forEach(function (f) {
+    if (!validateEventField(f)) ok = false;
+  });
+  return ok;
+}
 function loadEvent() {
   return api("/api/orga/event").then(function (ev) {
     var form = document.getElementById("eventForm");
     EVENT_FIELDS.forEach(function (f) {
-      if (form.elements[f] && ev[f] != null) form.elements[f].value = ev[f];
+      if (!form.elements[f]) return;
+      var v = ev[f];
+      if (f === "reveal_time" || f === "start_time") {
+        form.elements[f].value = v != null ? utcToLocalInputValue(v) : "";
+      } else {
+        form.elements[f].value = v != null ? String(v) : "";
+      }
     });
+    updateEndTimeDisplay();
+    validateAllEventFields();
   });
 }
+EVENT_FIELDS.forEach(function (f) {
+  var input = document.getElementById("eventForm").elements[f];
+  if (!input) return;
+  input.addEventListener("input", function () {
+    validateEventField(f);
+    if (f === "start_time" || f === "duration_h") updateEndTimeDisplay();
+  });
+});
 document.getElementById("saveEventBtn").addEventListener("click", function () {
   var msg = document.getElementById("eventMsg");
   msg.textContent = "";
+  if (!validateAllEventFields()) {
+    msg.appendChild(el("div", "msg err", "Bitte Eingaben korrigieren"));
+    return;
+  }
   var form = document.getElementById("eventForm");
   var body = {};
-  EVENT_FIELDS.forEach(function (f) {
-    var v = form.elements[f].value.trim();
-    if (v !== "") body[f] = v;
+  var nonEmpty = function (f) { return form.elements[f].value.trim() !== ""; };
+  if (nonEmpty("name")) body.name = form.elements["name"].value.trim();
+  ["start_lat", "start_lng", "duration_h", "checkin_interval_min", "checkin_window_min", "silence_alarm_min", "speed_flag_kmh"].forEach(function (f) {
+    if (nonEmpty(f)) body[f] = Number(form.elements[f].value.trim());
   });
+  ["reveal_time", "start_time"].forEach(function (f) {
+    if (nonEmpty(f)) body[f] = localInputValueToUtcIso(form.elements[f].value.trim());
+  });
+  if (nonEmpty("orga_phone")) body.orga_phone = form.elements["orga_phone"].value.trim();
   api("/api/orga/event", { method: "PUT", body: body }).then(function () {
     msg.appendChild(el("div", "msg ok", "Gespeichert."));
+    loadEvent().catch(function () {});
     refresh().catch(function () {});
   }).catch(function (err) {
     if (err.message !== "Nicht angemeldet") msg.appendChild(el("div", "msg err", err.message));
