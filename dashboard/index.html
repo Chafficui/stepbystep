@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orga Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1/dist/leaflet.css">
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1/dist/leaflet.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background:#f2f4f8; color:#1c2333; }
+  header { position:sticky; top:0; z-index:1200; background:#1c2333; color:#fff; padding:10px 16px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  header h1 { font-size:18px; margin:0; flex:1 1 auto; }
+  header .stand { font-size:13px; color:#cbd3e1; }
+  header button { background:#3b4a6b; color:#fff; border:0; border-radius:6px; padding:6px 12px; cursor:pointer; }
+  main { max-width:1200px; margin:0 auto; padding:16px; }
+  section.card { background:#fff; border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,.08); padding:16px; margin-bottom:16px; }
+  h2 { font-size:16px; margin:0 0 10px; }
+  .alert-item { border-left:6px solid; padding:10px 12px; margin-bottom:8px; border-radius:6px; background:#fdf3f3; display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap; }
+  .alert-item.sos { border-color:#d92d20; background:#fdecec; }
+  .alert-item.abort { border-color:#f79009; background:#fef4e6; }
+  .alert-item .meta { flex:1 1 260px; }
+  .alert-item .actions { display:flex; gap:8px; align-items:center; }
+  button { cursor:pointer; }
+  .btn { background:#1c2333; color:#fff; border:0; border-radius:6px; padding:6px 12px; font-size:13px; }
+  .btn.secondary { background:#e4e8f0; color:#1c2333; }
+  .btn.link { background:none; color:#0b5cd5; text-decoration:underline; padding:0; border:0; font-size:13px; }
+  .btn.danger { background:#d92d20; color:#fff; }
+  #map { height:420px; border-radius:8px; z-index:1; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid #e4e8f0; vertical-align:top; }
+  th { font-size:12px; color:#5a6478; text-transform:uppercase; letter-spacing:.03em; }
+  .badge { display:inline-block; border-radius:10px; padding:2px 8px; font-size:11px; font-weight:600; margin-right:4px; color:#fff; }
+  .badge.silent { background:#5941f2; }
+  .badge.overdue { background:#d92d20; }
+  .badge.speed { background:#f79009; }
+  .status-active { color:#0a7d34; font-weight:600; }
+  .status-aborted { color:#d92d20; font-weight:600; }
+  .status-finished { color:#5941f2; font-weight:600; }
+  .teamrow td { cursor:pointer; }
+  .details-row td { background:#f7f9fc; }
+  .battery.low { color:#d92d20; font-weight:600; }
+  details.participants summary { cursor:pointer; color:#0b5cd5; }
+  .participants li { margin:4px 0; }
+  .form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; }
+  .form-grid label { display:flex; flex-direction:column; font-size:12px; color:#5a6478; gap:4px; }
+  .form-grid input { padding:8px; border:1px solid #c9d0dd; border-radius:6px; font-size:14px; }
+  .msg { padding:8px 10px; border-radius:6px; font-size:13px; margin:8px 0; }
+  .msg.err { background:#fdecec; color:#b42318; }
+  .msg.ok { background:#e6f6ec; color:#0a7d34; }
+  .newteam { background:#e6f6ec; border-radius:8px; padding:12px; margin-top:10px; }
+  .newteam .code { font-family:ui-monospace,monospace; font-size:24px; font-weight:700; letter-spacing:.08em; }
+  #login { max-width:360px; margin:12vh auto; }
+  #login input { width:100%; padding:10px; border:1px solid #c9d0dd; border-radius:6px; font-size:15px; }
+  .strip { display:flex; gap:12px; overflow-x:auto; padding:8px 0; }
+  .checkin { flex:0 0 auto; width:220px; background:#f7f9fc; border-radius:8px; padding:8px; }
+  .checkin img, .checkin video { width:100%; border-radius:6px; background:#000; }
+  .checkin .cap { font-size:12px; color:#5a6478; margin-top:4px; }
+  .hidden { display:none !important; }
+  .muted { color:#5a6478; font-size:13px; }
+  .ranking td:first-child { font-weight:700; width:40px; }
+  dialog { border:0; border-radius:10px; box-shadow:0 8px 40px rgba(0,0,0,.25); max-width:760px; width:92%; padding:0; }
+  dialog .dlg-body { padding:16px; max-height:80vh; overflow:auto; }
+  dialog::backdrop { background:rgba(0,0,0,.45); }
+</style>
+</head>
+<body>
+
+<div id="login" class="card">
+  <h2>Orga-Login</h2>
+  <form id="loginForm">
+    <input type="password" id="loginPassword" placeholder="Orga-Passwort" autocomplete="current-password" required>
+    <div id="loginMsg"></div>
+    <button class="btn" type="submit" style="width:100%;margin-top:10px;">Anmelden</button>
+  </form>
+</div>
+
+<div id="app" class="hidden">
+  <header>
+    <h1 id="eventName">Orga Dashboard</h1>
+    <span class="stand" id="stand"></span>
+    <button id="logoutBtn" type="button">Abmelden</button>
+  </header>
+  <main>
+    <section class="card" id="alarmsCard">
+      <h2>Alarme</h2>
+      <div id="alarmsList"><span class="muted">Keine offenen Alarme.</span></div>
+    </section>
+
+    <section class="card">
+      <h2>Karte</h2>
+      <div id="map"></div>
+    </section>
+
+    <section class="card">
+      <h2>Teams</h2>
+      <div class="form-grid" style="grid-template-columns:1fr auto;align-items:end;gap:8px;margin-bottom:12px;">
+        <label>Team-Name <input type="text" id="newTeamName" maxlength="60"></label>
+        <button class="btn" type="button" id="createTeamBtn">Team anlegen</button>
+      </div>
+      <div id="createTeamMsg"></div>
+      <div id="newTeamBox"></div>
+      <table>
+        <thead><tr>
+          <th>Name</th><th>Code</th><th>Status</th><th>Letzter Punkt</th><th>Batterie</th><th>Letzter Check-in</th><th>Hinweise</th><th>Aktionen</th>
+        </tr></thead>
+        <tbody id="teamsBody"></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Rangliste</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+        <button class="btn secondary" type="button" id="rankCalcBtn">Rangliste aktualisieren</button>
+        <button class="btn" type="button" id="rankFinalBtn">Endwertung berechnen</button>
+      </div>
+      <div id="rankMsg"></div>
+      <div id="rankBox"><span class="muted">Noch keine Rangliste berechnet.</span></div>
+    </section>
+
+    <section class="card">
+      <h2>Event-Einstellungen</h2>
+      <form id="eventForm" class="form-grid">
+        <label>Name <input name="name" type="text"></label>
+        <label>Start-Breitengrad <input name="start_lat" type="number" step="any"></label>
+        <label>Start-Längengrad <input name="start_lng" type="number" step="any"></label>
+        <label>Aufdeckungszeit (UTC, ISO) <input name="reveal_time" type="text" placeholder="2026-01-01T10:00:00Z"></label>
+        <label>Startzeit (UTC, ISO) <input name="start_time" type="text"></label>
+        <label>Dauer (h) <input name="duration_h" type="number" step="0.5"></label>
+        <label>Endzeit (UTC, ISO) <input name="end_time" type="text"></label>
+        <label>Check-in-Intervall (min) <input name="checkin_interval_min" type="number"></label>
+        <label>Check-in-Fenster (min) <input name="checkin_window_min" type="number"></label>
+        <label>Stummalarm (min) <input name="silence_alarm_min" type="number"></label>
+        <label>Tempo-Schwellwert (km/h) <input name="speed_flag_kmh" type="number"></label>
+        <label>Orga-Telefon <input name="orga_phone" type="text"></label>
+      </form>
+      <div id="eventMsg"></div>
+      <button class="btn" type="button" id="saveEventBtn" style="margin-top:10px;">Speichern</button>
+    </section>
+  </main>
+</div>
+
+<dialog id="checkinDlg">
+  <div class="dlg-body">
+    <h2 id="checkinTitle">Check-ins</h2>
+    <div id="checkinContent"><span class="muted">Lade …</span></div>
+    <div style="margin-top:12px;text-align:right;"><button class="btn secondary" type="button" id="checkinClose">Schließen</button></div>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+
+/* ---------- helpers ---------- */
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+  });
+}
+function el(tag, cls, text) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+function fmtTime(iso) {
+  if (!iso) return "–";
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return "–";
+  return d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+}
+function fmtDateTime(iso) {
+  if (!iso) return "–";
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return "–";
+  return d.toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+function minutesAgo(minutes) {
+  if (minutes == null) return "–";
+  return "vor " + Math.round(minutes) + " min";
+}
+
+var token = sessionStorage.getItem("orgaToken") || null;
+var pollTimer = null;
+var knownAlertIds = {};   // id -> true (already seen unresolved)
+var titleBlinkTimer = null;
+var trackCache = {};      // teamId -> {points: [...], layer: polyline}
+var markers = {};         // teamId -> marker
+var map = null;
+var startMarker = null;
+var teamColorIdx = {};
+var TEAM_COLORS = ["#0b5cd5", "#0a7d34", "#d92d20", "#5941f2", "#f79009", "#0aa2a2", "#c026d3", "#84cc16", "#e11d48", "#7c3aed"];
+function colorForTeam(id) {
+  if (!(id in teamColorIdx)) teamColorIdx[id] = Object.keys(teamColorIdx).length % TEAM_COLORS.length;
+  return TEAM_COLORS[teamColorIdx[id]];
+}
+
+/* ---------- api ---------- */
+
+function api(path, opts) {
+  opts = opts || {};
+  var headers = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = "Bearer " + token;
+  return fetch(path, {
+    method: opts.method || "GET",
+    headers: headers,
+    body: opts.body != null ? JSON.stringify(opts.body) : undefined
+  }).then(function (res) {
+    if (res.status === 401) {
+      logout(false);
+      throw new Error("Nicht angemeldet");
+    }
+    if (res.status === 204) return null;
+    return res.text().then(function (t) {
+      var data = null;
+      try { data = t ? JSON.parse(t) : null; } catch (e) { /* non-JSON */ }
+      if (!res.ok) {
+        var err = new Error(data && data.error ? data.error : "Fehler (" + res.status + ")");
+        err.status = res.status;
+        throw err;
+      }
+      return data;
+    });
+  });
+}
+
+/* ---------- login ---------- */
+
+document.getElementById("loginForm").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var msg = document.getElementById("loginMsg");
+  msg.textContent = "";
+  var pw = document.getElementById("loginPassword").value;
+  api("/api/orga/login", { method: "POST", body: { password: pw } }).then(function (data) {
+    token = data.token;
+    sessionStorage.setItem("orgaToken", token);
+    showApp();
+  }).catch(function (err) {
+    msg.textContent = "";
+    msg.appendChild(el("div", "msg err", err.message === "Nicht angemeldet" ? "Anmeldung fehlgeschlagen." : err.message));
+  });
+});
+
+function logout(clearSession) {
+  token = null;
+  sessionStorage.removeItem("orgaToken");
+  stopPolling();
+  stopTitleBlink();
+  document.getElementById("app").classList.add("hidden");
+  document.getElementById("login").classList.remove("hidden");
+  if (clearSession !== false) document.getElementById("loginPassword").value = "";
+}
+document.getElementById("logoutBtn").addEventListener("click", function () { logout(true); });
+
+function showApp() {
+  document.getElementById("login").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  initMap();
+  refresh().catch(function () {});
+  loadEvent().catch(function () {});
+  loadRanking().catch(function () {});
+  startPolling();
+}
+
+/* ---------- polling ---------- */
+
+function startPolling() {
+  stopPolling();
+  pollTimer = setInterval(function () { refresh().catch(function () {}); }, 10000);
+}
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+function refresh() {
+  return api("/api/orga/overview").then(function (data) {
+    document.getElementById("stand").textContent = "Stand: " + fmtDateTime(data.server_now);
+    if (data.event && data.event.name) document.getElementById("eventName").textContent = data.event.name;
+    if (data.event && data.event.start_lat != null) setStartMarker(data.event.start_lat, data.event.start_lng);
+    renderAlarms(data.alerts || []);
+    renderTeams(data.teams || []);
+    updateTracks(data.teams || []);
+  }).catch(function (err) {
+    if (err.message === "Nicht angemeldet") return;
+    showTransientErr(document.getElementById("alarmsList"), "Verbindung zum Server fehlgeschlagen", err);
+  });
+}
+
+function showTransientErr(container, text) {
+  var old = container.querySelector(".msg.err[data-net]");
+  if (old) old.remove();
+  var m = el("div", "msg err", text);
+  m.setAttribute("data-net", "1");
+  container.insertBefore(m, container.firstChild);
+  setTimeout(function () { if (m.parentNode) m.remove(); }, 5000);
+}
+
+/* ---------- alarms ---------- */
+
+function renderAlarms(alerts) {
+  var list = document.getElementById("alarmsList");
+  list.textContent = "";
+  var open = alerts.filter(function (a) { return !a.resolved; });
+  open.sort(function (a, b) {
+    var w = function (t) { return t === "sos" ? 0 : 1; };
+    return w(a.type) - w(b.type) || String(b.created_at).localeCompare(String(a.created_at));
+  });
+
+  var fresh = null;
+  open.forEach(function (a) {
+    if (!knownAlertIds[a.id]) fresh = fresh || a;
+    knownAlertIds[a.id] = true;
+  });
+  if (fresh) onNewAlarm();
+
+  if (!open.length) {
+    list.appendChild(el("span", "muted", "Keine offenen Alarme."));
+    stopTitleBlink();
+    return;
+  }
+  open.forEach(function (a) {
+    var item = el("div", "alert-item " + (a.type === "sos" ? "sos" : "abort"));
+    var meta = el("div", "meta");
+    meta.appendChild(el("strong", null, a.type === "sos" ? "SOS" : "Abbruch"));
+    meta.appendChild(document.createTextNode(" – " + (a.team_name || "Unbekanntes Team")));
+    meta.appendChild(el("div", "muted", fmtDateTime(a.created_at) + " · Position " +
+      (a.lat != null ? a.lat.toFixed(5) + ", " + a.lng.toFixed(5) : "unbekannt")));
+    item.appendChild(meta);
+
+    var actions = el("div", "actions");
+    var pan = el("button", "btn secondary", "Karte zeigen");
+    pan.type = "button";
+    pan.addEventListener("click", function () {
+      if (map && a.lat != null) map.setView([a.lat, a.lng], 16);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    actions.appendChild(pan);
+    if (a.lat != null) {
+      var link = el("a", "btn link", "OSM");
+      link.href = "https://www.openstreetmap.org/?mlat=" + encodeURIComponent(a.lat) +
+        "&mlon=" + encodeURIComponent(a.lng) + "#map=17/" + a.lat + "/" + a.lng;
+      link.target = "_blank";
+      link.rel = "noopener";
+      actions.appendChild(link);
+    }
+    var done = el("button", "btn", "Erledigt");
+    done.type = "button";
+    done.addEventListener("click", function () {
+      done.disabled = true;
+      api("/api/orga/alerts/" + encodeURIComponent(a.id) + "/resolve", { method: "POST" })
+        .then(function () { stopTitleBlink(); return refresh(); })
+        .catch(function (err) {
+          if (err.message !== "Nicht angemeldet") showTransientErr(list, err.message);
+          done.disabled = false;
+        });
+    });
+    actions.appendChild(done);
+    item.appendChild(actions);
+    list.appendChild(item);
+  });
+}
+
+function onNewAlarm() {
+  beep();
+  startTitleBlink();
+}
+
+function beep() {
+  try {
+    var Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    var ctx = beep._ctx || (beep._ctx = new Ctx());
+    if (ctx.state === "suspended") ctx.resume();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = 880;
+    gain.gain.value = 0.25;
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.5);
+  } catch (e) { /* audio not available */ }
+}
+
+function startTitleBlink() {
+  if (titleBlinkTimer) return;
+  var orig = "Orga Dashboard";
+  var on = false;
+  titleBlinkTimer = setInterval(function () {
+    document.title = on ? orig : "⚠️ ⚠️ ⚠️";
+    on = !on;
+  }, 1000);
+}
+function stopTitleBlink() {
+  if (titleBlinkTimer) { clearInterval(titleBlinkTimer); titleBlinkTimer = null; }
+  document.title = "Orga Dashboard";
+}
+
+/* ---------- map & tracks ---------- */
+
+function initMap() {
+  if (map) return;
+  map = L.map("map").setView([48.14, 11.58], 14);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19, attribution: "&copy; OpenStreetMap"
+  }).addTo(map);
+  setTimeout(function () { if (map) map.invalidateSize(); }, 100);
+}
+
+function setStartMarker(lat, lng) {
+  if (!map) return;
+  if (startMarker) { startMarker.setLatLng([lat, lng]); return; }
+  startMarker = L.marker([lat, lng], { title: "Start" }).addTo(map)
+    .bindPopup("Startpunkt");
+}
+
+function since6h() {
+  return new Date(Date.now() - 6 * 3600 * 1000).toISOString();
+}
+
+function updateTracks(teams) {
+  if (!map) return;
+  var since = since6h();
+  teams.forEach(function (t) {
+    api("/api/orga/track?team=" + encodeURIComponent(t.id) + "&since=" + encodeURIComponent(since))
+      .then(function (data) {
+        var pts = (data && data.points) || [];
+        pts.sort(function (a, b) { return String(a.recorded_at).localeCompare(String(b.recorded_at)); });
+        var color = colorForTeam(t.id);
+        var cache = trackCache[t.id];
+        if (cache && cache.layer) map.removeLayer(cache.layer);
+        if (cache && cache.marker) map.removeLayer(cache.marker);
+        var latlngs = pts.filter(function (p) { return p.lat != null && p.lng != null; })
+          .map(function (p) { return [p.lat, p.lng]; });
+        var layer = null;
+        if (latlngs.length > 1) {
+          layer = L.polyline(latlngs, { color: color, weight: 3, opacity: 0.8 }).addTo(map);
+        }
+        var marker = null;
+        var last = pts.length ? pts[pts.length - 1] : null;
+        if (last && last.lat != null) {
+          marker = L.marker([last.lat, last.lng], { title: t.name }).addTo(map);
+          marker.bindPopup(function () {
+            var d = el("div");
+            d.appendChild(el("strong", null, t.name));
+            d.appendChild(el("div", "muted", "Letzter Punkt " + minutesAgo(t.minutes_since_last_point)));
+            return d;
+          });
+        }
+        trackCache[t.id] = { points: pts, layer: layer, marker: marker, color: color };
+      })
+      .catch(function (err) {
+        if (err.message !== "Nicht angemeldet" && err.status !== 404) { /* keep old track */ }
+      });
+  });
+}
+
+/* ---------- teams ---------- */
+
+function renderTeams(teams) {
+  var body = document.getElementById("teamsBody");
+  body.textContent = "";
+  teams.forEach(function (t) {
+    var tr = el("tr", "teamrow");
+    tr.appendChild(el("td", null, t.name || ""));
+    tr.appendChild(el("td", null, t.code || ""));
+    var st = el("td");
+    var statusText = { active: "aktiv", aborted: "abgebrochen", finished: "im Ziel" }[t.status] || t.status;
+    var span = el("span", "status-" + (t.status || ""), statusText);
+    st.appendChild(span);
+    tr.appendChild(st);
+    tr.appendChild(el("td", null, minutesAgo(t.minutes_since_last_point)));
+    var batt = el("td");
+    var battVal = t.last_point && t.last_point.battery != null ? Math.round(t.last_point.battery) + " %" : "–";
+    if (t.last_point && t.last_point.battery != null && t.last_point.battery < 20) batt.className = "battery low";
+    batt.textContent = battVal;
+    tr.appendChild(batt);
+    var ci = el("td");
+    if (t.last_checkin) {
+      ci.appendChild(el("div", null, "Slot " + t.last_checkin.slot));
+      ci.appendChild(el("div", "muted", fmtTime(t.last_checkin.captured_at) + " · " + (t.last_checkin.participant_name || "")));
+    } else {
+      ci.textContent = "–";
+    }
+    tr.appendChild(ci);
+    var hintTd = el("td");
+    var h = t.hints || {};
+    if (h.silent) hintTd.appendChild(el("span", "badge silent", "Still"));
+    if (h.checkin_overdue) hintTd.appendChild(el("span", "badge overdue", "Check-in überfällig"));
+    if (h.speeding) hintTd.appendChild(el("span", "badge speed", "Geschwindigkeit auffällig"));
+    if (!h.silent && !h.checkin_overdue && !h.speeding) hintTd.appendChild(el("span", "muted", "–"));
+    tr.appendChild(hintTd);
+    var act = el("td");
+    var detailsBtn = el("button", "btn secondary", "Details");
+    detailsBtn.type = "button";
+    var ciBtn = el("button", "btn secondary", "Check-ins");
+    ciBtn.type = "button";
+    ciBtn.addEventListener("click", function (ev) { ev.stopPropagation(); openCheckins(t); });
+    act.appendChild(detailsBtn);
+    act.appendChild(document.createTextNode(" "));
+    act.appendChild(ciBtn);
+    tr.appendChild(act);
+    body.appendChild(tr);
+
+    var detRow = el("tr", "details-row hidden");
+    var detCell = el("td");
+    detCell.colSpan = 8;
+    detRow.appendChild(detCell);
+    body.appendChild(detRow);
+
+    detailsBtn.addEventListener("click", function () {
+      var hidden = detRow.classList.toggle("hidden");
+      if (!hidden) loadTeamDetails(t, detCell);
+    });
+  });
+}
+
+function loadTeamDetails(t, cell) {
+  cell.textContent = "";
+  var head = el("div", null, "Lade …");
+  cell.appendChild(head);
+  api("/api/orga/teams").then(function (data) {
+    var team = (data.teams || []).find(function (x) { return String(x.id) === String(t.id); });
+    cell.textContent = "";
+    if (!team) { cell.appendChild(el("span", "muted", "Team nicht gefunden.")); return; }
+    var wrap = el("div");
+    wrap.appendChild(el("strong", null, "Teilnehmer (" + (team.participants || []).length + ")"));
+    var ul = el("ul", "participants");
+    if (!(team.participants || []).length) ul.appendChild(el("li", "muted", "Keine Teilnehmer."));
+    (team.participants || []).forEach(function (p) {
+      var li = el("li");
+      li.appendChild(document.createTextNode((p.display_name || "") + " · seit " + fmtDateTime(p.joined_at) + " "));
+      var rm = el("button", "btn danger", "Entfernen");
+      rm.type = "button";
+      rm.style.fontSize = "11px";
+      rm.style.padding = "2px 8px";
+      rm.addEventListener("click", function () {
+        if (!confirm("Teilnehmer „" + p.display_name + "“ wirklich entfernen?")) return;
+        api("/api/orga/teams/" + encodeURIComponent(team.id) + "/participants/" + encodeURIComponent(p.id), { method: "DELETE" })
+          .then(function () { loadTeamDetails(t, cell); refresh().catch(function () {}); })
+          .catch(function (err) {
+            if (err.message !== "Nicht angemeldet") {
+              cell.textContent = "";
+              cell.appendChild(el("div", "msg err", err.message));
+              loadTeamDetails(t, cell);
+            }
+          });
+      });
+      li.appendChild(rm);
+      ul.appendChild(li);
+    });
+    wrap.appendChild(ul);
+    cell.appendChild(wrap);
+  }).catch(function (err) {
+    if (err.message === "Nicht angemeldet") return;
+    cell.textContent = "";
+    cell.appendChild(el("div", "msg err", "Verbindung zum Server fehlgeschlagen"));
+  });
+}
+
+/* ---------- team creation ---------- */
+
+document.getElementById("createTeamBtn").addEventListener("click", function () {
+  var msg = document.getElementById("createTeamMsg");
+  var box = document.getElementById("newTeamBox");
+  msg.textContent = "";
+  var name = document.getElementById("newTeamName").value.trim();
+  if (!name) { msg.appendChild(el("div", "msg err", "Bitte einen Team-Namen eingeben.")); return; }
+  api("/api/orga/teams", { method: "POST", body: { name: name } }).then(function (data) {
+    document.getElementById("newTeamName").value = "";
+    box.textContent = "";
+    var b = el("div", "newteam");
+    b.appendChild(el("strong", null, "Team „" + name + "“ angelegt. Code für das Team:"));
+    b.appendChild(el("div", "code", data.code || "–"));
+    box.appendChild(b);
+    refresh().catch(function () {});
+  }).catch(function (err) {
+    if (err.message !== "Nicht angemeldet") msg.appendChild(el("div", "msg err", err.message));
+  });
+});
+
+/* ---------- check-ins ---------- */
+
+var checkinDlg = document.getElementById("checkinDlg");
+var mediaUrls = [];
+function revokeMedia() {
+  mediaUrls.forEach(function (u) { URL.revokeObjectURL(u); });
+  mediaUrls = [];
+}
+document.getElementById("checkinClose").addEventListener("click", function () { checkinDlg.close(); revokeMedia(); });
+
+function openCheckins(team) {
+  checkinDlg.showModal();
+  document.getElementById("checkinTitle").textContent = "Check-ins – " + (team.name || "");
+  var content = document.getElementById("checkinContent");
+  content.textContent = "";
+  content.appendChild(el("span", "muted", "Lade …"));
+  revokeMedia();
+  api("/api/orga/checkins?team=" + encodeURIComponent(team.id)).then(function (data) {
+    var cis = (data && data.checkins) || [];
+    content.textContent = "";
+    if (!cis.length) { content.appendChild(el("span", "muted", "Keine Check-ins vorhanden.")); return; }
+    var strip = el("div", "strip");
+    cis.forEach(function (c) {
+      var card = el("div", "checkin");
+      var holder = el("div");
+      card.appendChild(holder);
+      card.appendChild(el("div", "cap", "Slot " + c.slot + " · " + fmtDateTime(c.captured_at) + " · " + (c.participant_name || "")));
+      loadMedia(holder, c);
+      strip.appendChild(card);
+    });
+    content.appendChild(strip);
+  }).catch(function (err) {
+    if (err.message === "Nicht angemeldet") return;
+    content.textContent = "";
+    content.appendChild(el("div", "msg err", "Verbindung zum Server fehlgeschlagen"));
+  });
+}
+
+function loadMedia(holder, c) {
+  fetch("/api/orga/media/" + encodeURIComponent(c.id), { headers: { "Authorization": "Bearer " + token } })
+    .then(function (res) {
+      if (!res.ok) throw new Error("Fehler (" + res.status + ")");
+      return res.blob();
+    })
+    .then(function (blob) {
+      var url = URL.createObjectURL(blob);
+      mediaUrls.push(url);
+      holder.textContent = "";
+      var node;
+      if (c.media_type === "video" || (blob.type && blob.type.indexOf("video") === 0)) {
+        node = document.createElement("video");
+        node.controls = true;
+      } else {
+        node = document.createElement("img");
+        node.alt = "Check-in Slot " + c.slot;
+      }
+      node.src = url;
+      holder.appendChild(node);
+    })
+    .catch(function () {
+      holder.textContent = "";
+      holder.appendChild(el("div", "msg err", "Medium konnte nicht geladen werden."));
+    });
+}
+
+/* ---------- ranking ---------- */
+
+function loadRanking() {
+  return api("/api/orga/ranking").then(renderRanking).catch(function (err) {
+    if (err.status === 404) return; // noch keine Rangliste
+    if (err.message !== "Nicht angemeldet") throw err;
+  });
+}
+function renderRanking(data) {
+  var box = document.getElementById("rankBox");
+  box.textContent = "";
+  var wrap = el("div");
+  wrap.appendChild(el("div", "muted", "Berechnet: " + fmtDateTime(data.computed_at) + (data.is_final ? " · ENDWERTUNG" : "")));
+  var table = el("table");
+  var thead = el("thead");
+  var hr = el("tr");
+  ["Platz", "Team", "Distanz (km)"].forEach(function (h) { hr.appendChild(el("th", null, h)); });
+  thead.appendChild(hr); table.appendChild(thead);
+  var tbody = el("tbody");
+  (data.entries || []).forEach(function (e) {
+    var tr = el("tr");
+    tr.appendChild(el("td", null, String(e.rank)));
+    tr.appendChild(el("td", null, e.team_name || ""));
+    tr.appendChild(el("td", null, e.distance_km != null ? Number(e.distance_km).toFixed(2) : "–"));
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  box.appendChild(wrap);
+}
+function calcRanking(final) {
+  var msg = document.getElementById("rankMsg");
+  msg.textContent = "";
+  api("/api/orga/ranking?final=" + (final ? "true" : "false"), { method: "POST" }).then(function (data) {
+    renderRanking(data);
+    msg.appendChild(el("div", "msg ok", final ? "Endwertung berechnet." : "Rangliste aktualisiert."));
+  }).catch(function (err) {
+    if (err.message !== "Nicht angemeldet") msg.appendChild(el("div", "msg err", err.message));
+  });
+}
+document.getElementById("rankCalcBtn").addEventListener("click", function () { calcRanking(false); });
+document.getElementById("rankFinalBtn").addEventListener("click", function () { calcRanking(true); });
+
+/* ---------- event settings ---------- */
+
+var EVENT_FIELDS = ["name", "start_lat", "start_lng", "reveal_time", "start_time", "duration_h",
+  "end_time", "checkin_interval_min", "checkin_window_min", "silence_alarm_min", "speed_flag_kmh", "orga_phone"];
+
+function loadEvent() {
+  return api("/api/orga/event").then(function (ev) {
+    var form = document.getElementById("eventForm");
+    EVENT_FIELDS.forEach(function (f) {
+      if (form.elements[f] && ev[f] != null) form.elements[f].value = ev[f];
+    });
+  });
+}
+document.getElementById("saveEventBtn").addEventListener("click", function () {
+  var msg = document.getElementById("eventMsg");
+  msg.textContent = "";
+  var form = document.getElementById("eventForm");
+  var body = {};
+  EVENT_FIELDS.forEach(function (f) {
+    var v = form.elements[f].value.trim();
+    if (v !== "") body[f] = v;
+  });
+  api("/api/orga/event", { method: "PUT", body: body }).then(function () {
+    msg.appendChild(el("div", "msg ok", "Gespeichert."));
+    refresh().catch(function () {});
+  }).catch(function (err) {
+    if (err.message !== "Nicht angemeldet") msg.appendChild(el("div", "msg err", err.message));
+  });
+});
+
+/* ---------- boot ---------- */
+
+if (token) showApp();
+</script>
+</body>
+</html>
