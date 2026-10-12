@@ -117,7 +117,7 @@ void main() {
   group('inCheckinWindow', () {
     test('innerhalb des ersten Fensters', () {
       expect(
-        SlotCalc.inCheckinWindow(start.add(const Duration(minutes: 10)), start,
+        SlotCalc.inCheckinWindow(start.add(const Duration(minutes: 3)), start,
             30, 5),
         isTrue,
       );

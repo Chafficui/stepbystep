@@ -56,11 +56,10 @@ ON CONFLICT (id) DO UPDATE SET
   speed_flag_kmh = EXCLUDED.speed_flag_kmh,
   orga_phone = EXCLUDED.orga_phone;
 
-INSERT INTO team (event_id, code, name) VALUES
-  (1, 'TESTAAAA', 'Team Rot'),
-  (1, 'TESTBBBB', 'Team Blau')
+INSERT INTO team (code, name) VALUES
+  ('TESTAAAA', 'Team Rot'),
+  ('TESTBBBB', 'Team Blau')
 ON CONFLICT (code) DO UPDATE SET
-  event_id = EXCLUDED.event_id,
   name = EXCLUDED.name;
 "
 

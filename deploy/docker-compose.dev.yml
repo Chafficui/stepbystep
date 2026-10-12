@@ -19,12 +19,14 @@ services:
     restart: unless-stopped
 
   api:
-    build: ../server
+    build:
+      context: ..
+      dockerfile: Dockerfile
     environment:
       PORT: 8080
       DATABASE_URL: postgres://dev:dev@db:5432/stepbystep
       ORGA_PASSWORD: dev
-      ORGA_SESSION_SECRET: dev-secret-not-for-production
+      ORGA_SESSION_SECRET: dev-secret-not-for-production-0123456789 # mind. 32 Bytes
       UPLOAD_DIR: /data/uploads
       DASHBOARD_DIR: /app/dashboard
     ports:

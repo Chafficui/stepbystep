@@ -32,6 +32,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   _PermStatus _notifications = _PermStatus.undetermined;
   _PermStatus _camera = _PermStatus.undetermined;
   _PermStatus _microphone = _PermStatus.undetermined;
+  _PermStatus _battery = _PermStatus.undetermined;
   bool _isAndroid = false;
 
   @override
@@ -60,12 +61,18 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     final notif = await Permission.notification.status;
     final cam = await Permission.camera.status;
     final mic = await Permission.microphone.status;
+    final battery = _isAndroid
+        ? await Permission.ignoreBatteryOptimizations.status
+        : PermissionStatus.granted;
     if (!mounted) return;
     setState(() {
       _locationAlways = _map(always);
       _notifications = _map(notif);
       _camera = _map(cam);
       _microphone = _map(mic);
+      _battery = battery.isGranted
+          ? _PermStatus.granted
+          : _PermStatus.undetermined;
     });
   }
 
@@ -83,13 +90,18 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     }
   }
 
-  /// iOS-Zweistufigkeit: erst WhileInUse, dann Upgrade auf Always.
+  /// Zweistufig auf beiden Plattformen: erst Vordergrund-Standort, dann
+  /// Upgrade auf „Immer". Android (ab 11) ignoriert die Anfrage komplett,
+  /// wenn Vorder- und Hintergrund-Standort gemeinsam angefragt werden.
   Future<void> _requestLocation() async {
     if (_isAndroid) {
-      await [
-        Permission.location,
-        Permission.locationAlways,
-      ].request();
+      final foreground = await Permission.location.request();
+      if (foreground.isGranted) {
+        final always = await Permission.locationAlways.request();
+        if (always.isPermanentlyDenied) await openAppSettings();
+      } else if (foreground.isPermanentlyDenied) {
+        await openAppSettings();
+      }
     } else {
       // iOS: "While using" zuerst anfragen, danach gezielt auf "Immer"
       // upgraden (zweiter Systemdialog).
@@ -198,7 +210,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               'Android beendet sonst im Hintergrund laufende Apps. Bitte '
               'in den App-Info-Einstellungen „Akku" → „Unbeschränkt" '
               'wählen, damit die Ortsaufzeichnung nicht abbricht.',
-              _PermStatus.undetermined,
+              _battery,
               _requestBattery,
             ),
           const SizedBox(height: 16),

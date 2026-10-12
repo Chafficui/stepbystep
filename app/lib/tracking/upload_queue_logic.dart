@@ -75,9 +75,10 @@ List<QueuedAlert> orderedAlerts(List<QueuedAlert> alerts) {
 /// Queue (Punkte werden erst nach Server-Bestätigung als gesendet markiert).
 List<String> idsToMarkAccepted(List<String> sent, List<String> accepted) {
   final sentSet = sent.toSet();
+  final seen = <String>{};
   return [
     for (final id in accepted)
-      if (sentSet.contains(id)) id,
+      if (sentSet.contains(id) && seen.add(id)) id,
   ];
 }
 

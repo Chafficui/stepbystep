@@ -195,6 +195,7 @@ class _EventScreenState extends State<EventScreen> {
       }
       return;
     }
+    if (!mounted) return;
     if (_trackingState.kind == TrackingStateKind.running) {
       final confirm = await showDialog<bool>(
         context: context,
@@ -299,11 +300,11 @@ class _EventScreenState extends State<EventScreen> {
                 if (over) ...[
                   // Ende-Banner + Abschluss-Seite (inline). Tracking läuft
                   // bewusst weiter (Daten für die Abholung).
-                  Card(
+                  const Card(
                     color: Colors.deepOrange,
                     child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: const Text(
+                      padding: EdgeInsets.all(12),
+                      child: Text(
                           '🏁 Das Event ist beendet. Danke fürs Mitmachen!',
                           style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
@@ -418,7 +419,7 @@ class _EventScreenState extends State<EventScreen> {
                       'Alarme: ${_stats.unsentAlerts} · '
                       'Check-ins: ${_stats.unsentCheckins}'),
                   const SizedBox(height: 4),
-                  Text(_lastUploadLabel),
+                  Text(_lastUploadLabel()),
                   if (_battery.currentPercent != null)
                     Text('Akkustand: ${_battery.currentPercent}%'),
                 ],
@@ -514,9 +515,7 @@ class _EventScreenState extends State<EventScreen> {
     double lat = 0.0;
     double lng = 0.0;
     final tracking = _tracking;
-    final raw = tracking is TrackingService
-        ? (tracking as TrackingService).lastRawPosition
-        : null;
+    final raw = tracking is TrackingService ? tracking.lastRawPosition : null;
     if (raw != null) {
       lat = raw.latitude;
       lng = raw.longitude;
@@ -634,11 +633,10 @@ class _CountdownCard extends StatelessWidget {
 class _HoldToTriggerButton extends StatefulWidget {
   const _HoldToTriggerButton({
     required this.onTriggered,
-    this.holdDuration = const Duration(seconds: 2),
   });
 
   final VoidCallback onTriggered;
-  final Duration holdDuration;
+  static const holdDuration = Duration(seconds: 2);
 
   @override
   State<_HoldToTriggerButton> createState() => _HoldToTriggerButtonState();
@@ -663,7 +661,7 @@ class _HoldToTriggerButtonState extends State<_HoldToTriggerButton> {
       const Duration(milliseconds: _tickMs),
       (t) {
         final p = (t.tick * _tickMs) /
-            widget.holdDuration.inMilliseconds;
+            _HoldToTriggerButton.holdDuration.inMilliseconds;
         if (p >= 1.0) {
           _cancelTimer();
           if (mounted) {

@@ -616,6 +616,7 @@ export async function orgaRoutes(app: FastifyInstance): Promise<void> {
     }
     void reply.send({
       computed_at: computedAt.toISOString(),
+      is_final: isFinal,
       entries,
     });
   });

@@ -40,7 +40,7 @@ class SlotCalc {
   }
 
   /// true, wenn `capturedAt` innerhalb des Check-in-Fensters liegt
-  /// (`slot*interval` bis `(slot+1)*interval + windowMin`).
+  /// (`slot*interval` bis `slot*interval + windowMin`, wie im Server).
   static bool inCheckinWindow(
     DateTime capturedAt,
     DateTime startTime,
@@ -52,8 +52,7 @@ class SlotCalc {
       startTime.toUtc().millisecondsSinceEpoch + slot * intervalMin * 60000,
       isUtc: true,
     );
-    final windowEnd =
-        slotStart.add(Duration(minutes: intervalMin + windowMin));
+    final windowEnd = slotStart.add(Duration(minutes: windowMin));
     final t = capturedAt.toUtc();
     return !t.isBefore(slotStart) && !t.isAfter(windowEnd);
   }

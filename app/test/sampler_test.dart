@@ -28,7 +28,7 @@ void main() {
   });
 
   test('Distanzfilter: < 15 m innerhalb von 5 min wird verworfen', () {
-    // ~11 m östlich
+    // ~7 m östlich
     final d = Sampler.evaluate(
       last: last,
       candidateLat: 52.5200,
@@ -44,7 +44,7 @@ void main() {
     final d = Sampler.evaluate(
       last: last,
       candidateLat: 52.5200,
-      candidateLng: 13.4050 + 0.0002,
+      candidateLng: 13.4050 + 0.0003, // ~20 m östlich
       candidateAccuracy: 10,
       candidateAt: now,
       now: now,
