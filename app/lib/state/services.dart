@@ -19,6 +19,9 @@ class AppServices {
     return _instance!;
   }
 
+  /// Null-sichere Variante für frühe Widget-Lifecycles (vor `init()`).
+  static AppServices? get instanceOrNull => _instance;
+
   late final SessionStore session;
   late final AppDatabase db;
   late final ApiClient api;

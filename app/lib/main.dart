@@ -107,6 +107,13 @@ class _RootGateState extends State<RootGate> {
       _hasSession = hasSession;
       _loading = false;
     });
+    if (hasSession) {
+      // Nach erfolgreichem Join (bzw. Session-Restore) Uploads wieder
+      // anwerfen: Der Service wurde beim Start ggf. ohne Token still gelegt
+      // und würde sonst erst beim nächsten Timer-Lauf wieder starten.
+      final services = AppServices.instanceOrNull;
+      if (services != null) services.upload.resume();
+    }
   }
 
   @override

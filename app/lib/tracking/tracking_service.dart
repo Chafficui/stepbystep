@@ -175,11 +175,14 @@ class TrackingService implements TrackingController {
   Future<void> _heartbeat() async {
     final pos = _lastRaw;
     if (pos == null) return;
-    await _record(pos);
+    // Heartbeat-Punkte erhalten den Zeitpunkt der Erzeugung (jetzt) als
+    // `recordedAt` — nicht den alten Zeitstempel der gecachten Rohposition,
+    // damit die Punkte nicht rückdatiert werden.
+    await _record(pos, recordedAtOverride: DateTime.now().toUtc());
   }
 
-  Future<void> _record(Position pos) async {
-    final recordedAt = pos.timestamp.toUtc();
+  Future<void> _record(Position pos, {DateTime? recordedAtOverride}) async {
+    final recordedAt = recordedAtOverride ?? pos.timestamp.toUtc();
     final decision = Sampler.evaluate(
       last: _lastAccepted,
       candidateLat: pos.latitude,

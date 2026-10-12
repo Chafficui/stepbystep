@@ -100,12 +100,15 @@ class UploadService {
   /// Sofortiger Upload-Versuch (z. B. nach Netzwerk-Rückkehr oder durch UI).
   Future<void> flushNow() => _tick();
 
-  /// Nach 401: Uploads pausieren, bis eine neue Sitzung da ist
-  /// ([resume]). Es wird nichts gelöscht.
+  /// Nach 401 (oder ohne Sitzung beim Start): Uploads pausieren, bis eine
+  /// neue Sitzung da ist ([resume]). Es wird nichts gelöscht. Das Pausieren
+  /// selbst wirft den Timer nicht weg — [resume] startet ihn wieder.
   void pause() => _paused = true;
 
   void resume() {
     _paused = false;
+    // Timer neu aufziehen, falls er während der Pause verfallen war.
+    _timer ??= Timer(periodicDelay, _tick);
     unawaited(flushNow());
   }
 
@@ -206,9 +209,12 @@ class UploadService {
       );
       final toMark = idsToMarkAccepted(sentIds, accepted);
       if (toMark.isNotEmpty) await _db.markPointsSent(toMark);
-      // Nicht bestätigte Punkte bleiben ungesendet -> nächster Durchlauf.
-      if (toMark.length < sentIds.length) return;
-      if (points.length < maxPointsPerBatch) return;
+      // Nicht bestätigte Punkte bleiben ungesendet (niemals löschen) und
+      // werden später erneut versucht. Bei Fortschritt (mind. ein Punkt
+      // akzeptiert) direkt das nächste Batch aus der Queue holen statt
+      // den Rest auf den nächsten Tick zu schieben.
+      if (toMark.isEmpty) return; // kein Fortschritt -> nächster Durchlauf
+      if (rows.length < maxPointsPerBatch) return; // Queue damit leer
     }
   }
 
