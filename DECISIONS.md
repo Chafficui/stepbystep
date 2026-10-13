@@ -24,6 +24,8 @@
 | Ranking leer | `GET /api/orga/ranking` liefert bei leerer Rangliste `200` mit `computed_at: null` statt `404` | Verhindert wiederkehrende Konsolen-Fehler beim Laden des Dashboards; semantisch keine Abwesenheit einer Ressource. |
 | Teamfoto | Pflicht pro Team vor Eventstart (ein Foto je Team, egal von welchem Gerät); nach dem Start oder ohne Netz kann übersprungen werden („Später" bzw. Weiter zum Event mit Hinweis-Karte); Orga kann das Foto im Dashboard zurücksetzen → Neuaufnahme | Erkennung der Teams und Karten-Pin, ohne jemanden mitten im Event auszusperren — der SOS-Knopf muss immer erreichbar bleiben. |
 | Team-Spur in der App | `GET /api/my-track` liefert die Punkte aller Geräte des eigenen Teams (max. 5000); die App ergänzt lokal noch nicht gesendete, neuere Punkte | Beide Teilnehmer sehen dieselbe Linie; offline bleibt die eigene Spur sichtbar. Teilnehmer sehen nie Punkte anderer Teams. |
+| Zeitzone | Server speichert und liefert ausschließlich UTC; Dashboard und App zeigen und erfassen alle Uhrzeiten in Europe/Berlin (MEZ/MESZ), unabhängig von der Zeitzone des Geräts/Browsers | Orga-Laptop oder Handy mit falscher/ausländischer Zeitzone dürfen keine verschobenen Start- oder Check-in-Zeiten anzeigen oder speichern. |
+| Karten-Fokus | Dashboard: Modi „Alle Teams" (Standard), „Team folgen", „Startpunkt", bei manueller Bewegung „Frei" mit „Auto-Fokus"-Knopf; App: folgt immer dem eigenen Team, kehrt 10 s nach manueller Bewegung automatisch zurück | Die Karte zeigt ohne Zutun das Relevante, manuelles Erkunden bleibt möglich. |
 
 ## Offene Punkte / bekannte Einschränkungen
 

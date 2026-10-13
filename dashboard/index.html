@@ -146,6 +146,8 @@ input::placeholder { color: var(--fg-faint); }
 input:focus { outline: none; border-color: var(--fg); }
 input[readonly] { color: var(--fg-muted); border-style: dashed; }
 input[aria-invalid="true"] { border-color: var(--signal); }
+.tz-tag { color: var(--fg-faint); font-size: 10px; letter-spacing: .08em; margin-left: 4px; }
+.tz-note { font-size: 12px; margin: 0 0 10px; }
 .field-err { color: var(--signal); font-size: 12px; min-height: 0; }
 .msg { padding: 9px 12px; border-radius: var(--r-sm); font-size: 13px; margin: 10px 0 0; border-left: 3px solid; background: var(--surface-2); }
 .msg.err { border-color: var(--signal); color: #ff8f87; }
@@ -265,6 +267,24 @@ input[aria-invalid="true"] { border-color: var(--signal); }
 .card.map-card, .card.teamlist-card { padding: 0; }
 .map-card { overflow: hidden; position: relative; isolation: isolate; min-height: 420px; }
 #map { position: absolute; inset: 0; background: #0a0b0a; }
+.map-tools {
+  position: absolute; top: 10px; right: 10px; z-index: 1000; display: flex; flex-wrap: wrap; gap: 6px;
+  justify-content: flex-end; align-items: center; max-width: calc(100% - 70px);
+  background: rgba(14,15,14,.88); border: 1px solid var(--line-strong); border-radius: var(--r-md); padding: 6px;
+}
+.map-tools [hidden] { display: none !important; }
+.map-tools select {
+  background: var(--surface-2); color: var(--fg); border: 1px solid var(--line-strong); border-radius: var(--r-sm);
+  min-height: 30px; padding: 3px 8px; font-size: 12px; max-width: 150px;
+}
+.map-tools select.on { border-color: var(--fg); }
+.map-chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 3px 4px 3px 10px;
+  border: 1px solid var(--fg); border-radius: 15px; font-size: 12px; font-weight: 700; color: var(--fg);
+}
+.map-chip button { background: transparent; border: 0; color: var(--fg); width: 22px; height: 22px; border-radius: 50%; font-size: 13px; line-height: 1; }
+.map-chip button:hover { background: var(--line-strong); }
+@media (max-width: 899px) { .map-tools { left: 56px; max-width: none; } }
 .map-wrap { position: relative; height: clamp(440px, calc(100vh - 330px), 780px); }
 .teamlist-card { display: flex; flex-direction: column; min-height: 0; height: clamp(440px, calc(100vh - 330px), 780px); }
 .teamlist-card .card-head { padding: 14px 16px 0; margin-bottom: 8px; }
@@ -574,7 +594,14 @@ dialog::backdrop { background: rgba(0,0,0,.72); }
           <div class="kpi rise" id="kpiNoPhoto"><span class="label">Teamfoto fehlt</span><span class="val num">0</span></div>
         </div>
         <div class="live-grid">
-          <div class="card map-card rise"><div class="map-wrap"><div id="map"></div></div></div>
+          <div class="card map-card rise"><div class="map-wrap"><div id="map"></div>
+            <div class="map-tools" id="mapTools" role="toolbar" aria-label="Karten-Fokus">
+              <button class="btn small" type="button" id="mfAll">Alle Teams</button>
+              <button class="btn secondary small" type="button" id="mfStart">Startpunkt</button>
+              <select id="mfTeam" aria-label="Team folgen"></select>
+              <span class="map-chip" id="mfChip" hidden><span id="mfChipText"></span><button type="button" id="mfChipX" aria-label="Folgen beenden">✕</button></span>
+              <button class="btn small" type="button" id="mfResume" hidden>Auto-Fokus</button>
+            </div></div></div>
           <div class="card teamlist-card rise">
             <div class="card-head"><h2>Teams</h2><span class="label" id="teamListCount"></span></div>
             <div class="teamlist" id="teamList"></div>
@@ -638,13 +665,14 @@ dialog::backdrop { background: rgba(0,0,0,.72); }
             </fieldset>
             <fieldset class="rise">
               <legend>Start &amp; Zeit</legend>
+              <p class="muted tz-note">Alle Zeiten in deutscher Zeit (Europe/Berlin), unabhängig von der Zeitzone dieses Geräts.</p>
               <div class="fgrid">
                 <label class="field"><span class="label">Start-Breitengrad</span><input name="start_lat" type="number" step="any"><span class="field-err" data-err-for="start_lat"></span></label>
                 <label class="field"><span class="label">Start-Längengrad</span><input name="start_lng" type="number" step="any"><span class="field-err" data-err-for="start_lng"></span></label>
-                <label class="field"><span class="label">Aufdeckungszeit</span><input name="reveal_time" type="datetime-local"><span class="field-err" data-err-for="reveal_time"></span></label>
-                <label class="field"><span class="label">Startzeit</span><input name="start_time" type="datetime-local"><span class="field-err" data-err-for="start_time"></span></label>
+                <label class="field"><span class="label">Aufdeckungszeit <span class="tz-tag">MEZ</span></span><input name="reveal_time" type="datetime-local"><span class="field-err" data-err-for="reveal_time"></span></label>
+                <label class="field"><span class="label">Startzeit <span class="tz-tag">MEZ</span></span><input name="start_time" type="datetime-local"><span class="field-err" data-err-for="start_time"></span></label>
                 <label class="field"><span class="label">Dauer (h)</span><input name="duration_h" type="number" step="1"><span class="field-err" data-err-for="duration_h"></span></label>
-                <label class="field"><span class="label">Endzeit</span><input name="end_time_display" type="text" readonly></label>
+                <label class="field"><span class="label">Endzeit <span class="tz-tag">MEZ</span></span><input name="end_time_display" type="text" readonly></label>
               </div>
             </fieldset>
             <fieldset class="rise">
@@ -734,23 +762,38 @@ function el(tag, cls, text) {
   return e;
 }
 function $(id) { return document.getElementById(id); }
-function fmtTime(iso) {
-  if (!iso) return "–";
+// Alle Zeiten in deutscher Zeit, unabhängig von der Zeitzone des Browsers.
+const TZ = "Europe/Berlin";
+function parseDate(iso) {
+  if (!iso) return null;
   var d = new Date(iso);
-  if (isNaN(d.getTime())) return "–";
-  return d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  return isNaN(d.getTime()) ? null : d;
+}
+function fmtTime(iso) {
+  var d = parseDate(iso);
+  if (!d) return "–";
+  return d.toLocaleTimeString("de-DE", { timeZone: TZ, hour: "2-digit", minute: "2-digit" });
 }
 function fmtTimeSec(iso) {
-  if (!iso) return "–";
-  var d = new Date(iso);
-  if (isNaN(d.getTime())) return "–";
-  return d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  var d = parseDate(iso);
+  if (!d) return "–";
+  return d.toLocaleTimeString("de-DE", { timeZone: TZ, hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 function fmtDateTime(iso) {
-  if (!iso) return "–";
-  var d = new Date(iso);
-  if (isNaN(d.getTime())) return "–";
-  return d.toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  var d = parseDate(iso);
+  if (!d) return "–";
+  return d.toLocaleString("de-DE", { timeZone: TZ, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+function fmtDateTimeLong(ms) {
+  return new Date(ms).toLocaleString("de-DE", { timeZone: TZ, weekday: "short", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+// "MEZ" / "MESZ" für den gegebenen Zeitpunkt
+function tzAbbr(ms) {
+  try {
+    var parts = new Intl.DateTimeFormat("de-DE", { timeZone: TZ, timeZoneName: "short" }).formatToParts(new Date(ms == null ? Date.now() : ms));
+    for (var k = 0; k < parts.length; k++) if (parts[k].type === "timeZoneName") return parts[k].value;
+  } catch (e) { /* */ }
+  return "MEZ";
 }
 function minutesAgo(minutes) {
   if (minutes == null) return "–";
@@ -1140,7 +1183,7 @@ function refresh() {
     state.alerts = data.alerts || [];
     state.lastRefresh = data.server_now;
     var st = $("stand");
-    st.textContent = "Stand: " + fmtTimeSec(data.server_now);
+    st.textContent = "Stand: " + fmtTimeSec(data.server_now) + " " + tzAbbr(Date.parse(data.server_now));
     st.classList.remove("stale");
     if (data.event && data.event.name) $("eventName").textContent = data.event.name;
     if (data.event && data.event.start_lat != null) setStartMarker(data.event.start_lat, data.event.start_lng);
@@ -1212,7 +1255,7 @@ function updateClock(fromTicker) {
   var phase, label, big, sub, p;
   if (now < start) {
     phase = "before"; p = 0;
-    label = "Bis Start"; big = hms(start - now); sub = "Start " + fmtTime(ev.start_time) + " Uhr";
+    label = "Bis Start"; big = hms(start - now); sub = "Start " + fmtTime(ev.start_time) + " Uhr " + tzAbbr(start);
   } else if (now < end) {
     phase = "running"; p = clamp((now - start) / (end - start), 0, 1);
     label = "Restzeit"; big = hms(end - now); sub = "Seit Start " + hms(now - start);
@@ -1291,7 +1334,7 @@ function renderAlarms(alerts) {
     var actions = el("div", "actions");
     var pan = el("button", "btn secondary small", "Auf Karte zeigen");
     pan.type = "button";
-    pan.addEventListener("click", function () { showOnMap(a.lat, a.lng); });
+    pan.addEventListener("click", function () { showOnMap(a.lat, a.lng, a); });
     actions.appendChild(pan);
     if (a.lat != null) {
       var link = el("a", "link-btn", "OSM");
@@ -1321,7 +1364,11 @@ function renderAlarms(alerts) {
   renderedAlertIds = nextRendered;
 }
 
-function showOnMap(lat, lng) {
+function showOnMap(lat, lng, a) {
+  var ft = null;
+  if (a) state.teams.forEach(function (t) { if (!ft && ((a.team_id && t.id === a.team_id) || (a.team_name && t.name === a.team_name))) ft = t; });
+  if (ft && teamPosition(ft)) { focusTeam(ft); return; }
+  if (map) enterFree();
   if (lat != null) state.pendingPan = { lat: lat, lng: lng, zoom: 16 };
   if (currentRoute() !== "live") { navigate("live"); return; }
   applyPendingPan();
@@ -1333,7 +1380,7 @@ function applyPendingPan() {
   var p = state.pendingPan;
   state.pendingPan = null;
   map.invalidateSize();
-  map.setView([p.lat, p.lng], p.zoom || 16);
+  programmatic(function () { map.setView([p.lat, p.lng], p.zoom || 16, { animate: false }); });
   if (p.marker) p.marker.openPopup();
 }
 
@@ -1381,6 +1428,8 @@ var OSM_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStr
 function initMap() {
   if (map) return;
   map = L.map("map").setView([48.14, 11.58], 14);
+  map.on("dragstart zoomstart", function () { if (!progFlag) enterFree(); });
+  initMapTools();
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: OSM_ATTR }).addTo(map);
   setTimeout(function () { if (map) map.invalidateSize(); }, 100);
 }
@@ -1388,7 +1437,7 @@ function onShowLive() {
   setTimeout(function () {
     if (!map) return;
     map.invalidateSize();
-    fitMapOnce();
+    applyFocus(true);
     applyPendingPan();
   }, 30);
 }
@@ -1399,9 +1448,9 @@ function startIcon() {
 }
 function setStartMarker(lat, lng) {
   if (!map) return;
-  if (startMarker) { startMarker.setLatLng([lat, lng]); return; }
+  if (startMarker) { startMarker.setLatLng([lat, lng]); applyFocus(); return; }
   startMarker = L.marker([lat, lng], { title: "Start", icon: startIcon() }).addTo(map).bindPopup("Startpunkt");
-  if (!state.mapFitted && !Object.keys(markers).length) { map.setView([lat, lng], 14); }
+  if (!Object.keys(markers).length) programmatic(function () { map.setView([lat, lng], 14, { animate: false }); });
 }
 
 function since6h() {
@@ -1556,17 +1605,122 @@ function updateMarkers() {
   Object.keys(markers).forEach(function (id) {
     if (!seen[id]) { map.removeLayer(markers[id]); delete markers[id]; }
   });
-  fitMapOnce();
+  syncFocusUi();
+  applyFocus();
 }
-// Erste Ausrichtung der Karte auf alle Teams – nur bei sichtbarer Karte mit echter Größe.
-function fitMapOnce() {
-  if (state.mapFitted || !map || !Object.keys(markers).length) return;
+/* ---- Karten-Fokus: "all" | "follow" | "start" | "free" (bleibt über Refreshes bestehen) ---- */
+var progFlag = 0;
+var mapFocus = { mode: "all", team: null, prev: { mode: "all", team: null }, sig: "" };
+var FOCUS_KEY = "sbs_map_focus";
+function programmatic(fn) { progFlag++; try { fn(); } finally { progFlag--; } }
+function loadFocus() {
+  try {
+    var o = JSON.parse(localStorage.getItem(FOCUS_KEY) || "null");
+    if (o && ["all", "follow", "start"].indexOf(o.mode) >= 0) {
+      mapFocus.mode = o.mode; mapFocus.team = o.team || null;
+      if (mapFocus.mode === "follow" && !mapFocus.team) mapFocus.mode = "all";
+    }
+  } catch (e) { /* */ }
+  mapFocus.prev = { mode: mapFocus.mode, team: mapFocus.team };
+}
+function saveFocus() {
+  try {
+    var m = mapFocus.mode === "free" ? mapFocus.prev : mapFocus;
+    localStorage.setItem(FOCUS_KEY, JSON.stringify({ mode: m.mode, team: m.team }));
+  } catch (e) { /* */ }
+}
+function setFocus(mode, teamId) {
+  mapFocus.mode = mode;
+  mapFocus.team = mode === "follow" ? teamId : null;
+  if (mode !== "free") mapFocus.prev = { mode: mapFocus.mode, team: mapFocus.team };
+  mapFocus.sig = "";
+  saveFocus();
+  syncFocusUi();
+  applyFocus(true);
+}
+function enterFree() {
+  if (mapFocus.mode === "free") return;
+  mapFocus.prev = { mode: mapFocus.mode, team: mapFocus.team };
+  mapFocus.mode = "free";
+  syncFocusUi();
+}
+function teamById(id) {
+  for (var i = 0; i < state.teams.length; i++) if (state.teams[i].id === id) return state.teams[i];
+  return null;
+}
+var teamOptKey = "";
+function syncFocusUi() {
+  if (!$("mfAll")) return;
+  var m = mapFocus.mode;
+  $("mfAll").className = "btn small" + (m === "all" ? "" : " secondary");
+  $("mfStart").className = "btn small" + (m === "start" ? "" : " secondary");
+  var sel = $("mfTeam");
+  var key = state.teams.map(function (t) { return t.id + "\u0001" + t.name; }).join("\u0002");
+  if (key !== teamOptKey) {
+    teamOptKey = key;
+    sel.textContent = "";
+    var o0 = el("option", null, "Team folgen …"); o0.value = ""; sel.appendChild(o0);
+    state.teams.forEach(function (t) { var o = el("option", null, t.name); o.value = t.id; sel.appendChild(o); });
+  }
+  sel.value = m === "follow" && mapFocus.team ? mapFocus.team : "";
+  sel.classList.toggle("on", m === "follow");
+  var chip = $("mfChip");
+  var t = m === "follow" ? teamById(mapFocus.team) : null;
+  chip.hidden = !t;
+  if (t) $("mfChipText").textContent = "Folgt: " + t.name;
+  $("mfResume").hidden = m !== "free";
+}
+function initMapTools() {
+  loadFocus();
+  $("mfAll").addEventListener("click", function () { setFocus("all"); });
+  $("mfStart").addEventListener("click", function () { setFocus("start"); });
+  $("mfChipX").addEventListener("click", function () { setFocus("all"); });
+  $("mfTeam").addEventListener("change", function () {
+    if (this.value) setFocus("follow", this.value); else setFocus("all");
+  });
+  $("mfResume").addEventListener("click", function () { setFocus(mapFocus.prev.mode, mapFocus.prev.team); });
+  syncFocusUi();
+}
+// Wendet den gewählten Fokus an. force = auch ohne geänderte Positionen neu ausrichten.
+function applyFocus(force) {
+  if (!map || mapFocus.mode === "free") return;
   var sz = map.getSize();
-  if (sz.x < 50 || sz.y < 50) return;
-  state.mapFitted = true;
-  var pts = Object.keys(markers).map(function (id) { return markers[id].getLatLng(); });
-  if (startMarker) pts.push(startMarker.getLatLng());
-  try { map.fitBounds(L.latLngBounds(pts), { padding: [50, 50], maxZoom: 16, animate: false }); } catch (e) { /* */ }
+  if (sz.x < 50 || sz.y < 50) return; // Karte unsichtbar – später (onShowLive) erneut
+  var sig, pts = [], pos;
+  if (mapFocus.mode === "follow") {
+    var t = teamById(mapFocus.team);
+    if (!t && state.teams.length) { setFocus("all"); return; }
+    pos = t ? teamPosition(t) : null;
+    if (!pos) return;
+    sig = "f" + pos[0] + "," + pos[1];
+  } else if (mapFocus.mode === "start") {
+    if (!startMarker) return;
+    var sl = startMarker.getLatLng();
+    sig = "s" + sl.lat + "," + sl.lng;
+  } else {
+    Object.keys(markers).forEach(function (id) { var l = markers[id].getLatLng(); pts.push(l); });
+    if (startMarker) pts.push(startMarker.getLatLng());
+    if (!pts.length) return;
+    sig = "a" + pts.map(function (l) { return l.lat + "," + l.lng; }).join(";");
+  }
+  if (!force && sig === mapFocus.sig) return;
+  var first = !mapFocus.sig;
+  mapFocus.sig = sig;
+  programmatic(function () {
+    try {
+      if (mapFocus.mode === "follow") {
+        var z = (force || first) ? Math.max(map.getZoom(), 16) : map.getZoom();
+        map.setView(pos, z, { animate: false });
+      } else if (mapFocus.mode === "start") {
+        var ll = startMarker.getLatLng();
+        map.setView(ll, Math.max(map.getZoom(), 15), { animate: false });
+      } else if (pts.length === 1) {
+        map.setView(pts[0], 16, { animate: false });
+      } else {
+        map.fitBounds(L.latLngBounds(pts), { padding: [60, 60], maxZoom: 16, animate: false });
+      }
+    } catch (e) { /* */ }
+  });
 }
 
 function updateTracks(teams) {
@@ -1599,6 +1753,7 @@ function focusTeam(t) {
   var pos = teamPosition(t);
   if (!pos) { toast("Für dieses Team liegt noch keine Position vor."); return; }
   state.pendingPan = { lat: pos[0], lng: pos[1], zoom: Math.max(map ? map.getZoom() : 0, 16), marker: markers[t.id] };
+  if (map) setFocus("follow", t.id); else { mapFocus.mode = "follow"; mapFocus.team = t.id; mapFocus.prev = { mode: "follow", team: t.id }; saveFocus(); }
   if (currentRoute() !== "live") { navigate("live"); return; }
   applyPendingPan();
   var m = $("map");
@@ -2122,17 +2277,39 @@ $("rankFinalBtn").addEventListener("click", function () { calcRanking(true); });
 var EVENT_FIELDS = ["name", "start_lat", "start_lng", "reveal_time", "start_time", "duration_h",
   "checkin_interval_min", "checkin_window_min", "silence_alarm_min", "speed_flag_kmh", "orga_phone"];
 
-function utcToLocalInputValue(iso) {
-  var d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) +
-    "T" + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+var BERLIN_DTF = new Intl.DateTimeFormat("en-GB", {
+  timeZone: TZ, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit",
+  hour: "2-digit", minute: "2-digit", second: "2-digit"
+});
+// Berlin-Wanduhr eines Zeitpunkts als "UTC-Millisekunden" (Jahr…Sekunde der Berliner Uhr)
+function berlinWallAsUtcMs(ms) {
+  var o = {};
+  BERLIN_DTF.formatToParts(new Date(ms)).forEach(function (p) { o[p.type] = p.value; });
+  return Date.UTC(+o.year, +o.month - 1, +o.day, +o.hour % 24, +o.minute, +o.second);
 }
-function localInputValueToUtcIso(v) {
-  // "YYYY-MM-DDTHH:MM" in the browser's local timezone -> ISO-8601 UTC with Z
-  var d = new Date(v);
-  if (isNaN(d.getTime())) return null;
-  return d.toISOString();
+function berlinOffsetMs(ms) { return berlinWallAsUtcMs(ms) - Math.floor(ms / 1000) * 1000; }
+function utcToBerlinInputValue(iso) {
+  var d = new Date(iso);
+  if (!iso || isNaN(d.getTime())) return "";
+  var w = new Date(berlinWallAsUtcMs(d.getTime()));
+  return w.getUTCFullYear() + "-" + pad2(w.getUTCMonth() + 1) + "-" + pad2(w.getUTCDate()) +
+    "T" + pad2(w.getUTCHours()) + ":" + pad2(w.getUTCMinutes());
+}
+function berlinInputValueToUtcIso(v) {
+  // "YYYY-MM-DDTHH:MM" als Berliner Wanduhrzeit -> ISO-8601 UTC mit Z (DST-korrekt)
+  var m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(String(v || "").trim());
+  if (!m) return null;
+  var wall = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
+  if (isNaN(wall)) return null;
+  var guess = wall - berlinOffsetMs(wall);
+  guess = wall - berlinOffsetMs(guess);
+  guess = wall - berlinOffsetMs(guess);
+  if (berlinWallAsUtcMs(guess) !== wall) {
+    // Nicht existierende Uhrzeit (Sommerzeit-Sprung): auf die Winterzeit-Interpretation (+1 h) legen,
+    // ergibt z. B. 02:30 -> 03:30 MESZ.
+    guess = wall - 3600000;
+  }
+  return new Date(guess).toISOString();
 }
 function eventFieldErrEl(field) {
   return document.querySelector('.field-err[data-err-for="' + field + '"]');
@@ -2140,16 +2317,28 @@ function eventFieldErrEl(field) {
 function isInt(v) {
   return Number.isInteger(v);
 }
+function updateTzTags() {
+  var form = $("eventForm");
+  ["reveal_time", "start_time"].forEach(function (f) {
+    var iso = berlinInputValueToUtcIso(form.elements[f].value);
+    var tag = form.elements[f].parentNode.querySelector(".tz-tag");
+    if (tag) tag.textContent = tzAbbr(iso ? Date.parse(iso) : Date.now());
+  });
+  var et = form.elements["end_time_display"].parentNode.querySelector(".tz-tag");
+  if (et) et.textContent = tzAbbr();
+}
 function updateEndTimeDisplay() {
   var form = $("eventForm");
   var start = form.elements["start_time"].value;
   var dur = form.elements["duration_h"].value;
   var out = form.elements["end_time_display"];
   if (start === "" || dur === "") { out.value = ""; return; }
-  var sd = new Date(start);
+  var sIso = berlinInputValueToUtcIso(start);
+  var sd = new Date(sIso || NaN);
   var h = parseFloat(dur);
   if (isNaN(sd.getTime()) || isNaN(h)) { out.value = ""; return; }
-  out.value = new Date(sd.getTime() + h * 3600 * 1000).toLocaleString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) + " Uhr";
+  var endMs = sd.getTime() + h * 3600 * 1000;
+  out.value = fmtDateTimeLong(endMs) + " Uhr " + tzAbbr(endMs);
 }
 function validateEventField(field) {
   var form = $("eventForm");
@@ -2175,10 +2364,10 @@ function validateEventField(field) {
       }
     }
   } else if (field === "reveal_time") {
-    if (v !== "" && isNaN(new Date(v).getTime())) err = "Ungültiges Datum.";
+    if (v !== "" && berlinInputValueToUtcIso(v) === null) err = "Ungültiges Datum.";
   } else if (field === "start_time") {
     if (v === "") err = "Startzeit ist erforderlich.";
-    else if (isNaN(new Date(v).getTime())) err = "Ungültiges Datum.";
+    else if (berlinInputValueToUtcIso(v) === null) err = "Ungültiges Datum.";
   } else if (field === "duration_h") {
     if (v === "") err = "Erforderlich.";
     else if (!isInt(num) || num < 1 || num > 72) err = "Ganze Zahl zwischen 1 und 72.";
@@ -2211,11 +2400,12 @@ function loadEvent() {
       if (!form.elements[f]) return;
       var v = ev[f];
       if (f === "reveal_time" || f === "start_time") {
-        form.elements[f].value = v != null ? utcToLocalInputValue(v) : "";
+        form.elements[f].value = v != null ? utcToBerlinInputValue(v) : "";
       } else {
         form.elements[f].value = v != null ? String(v) : "";
       }
     });
+    updateTzTags();
     updateEndTimeDisplay();
     validateAllEventFields();
     updateStartMap();
@@ -2226,6 +2416,7 @@ EVENT_FIELDS.forEach(function (f) {
   if (!input) return;
   input.addEventListener("input", function () {
     validateEventField(f);
+    if (f === "start_time" || f === "reveal_time") updateTzTags();
     if (f === "start_time" || f === "duration_h") updateEndTimeDisplay();
     if (f === "start_lat" || f === "start_lng") updateStartMap();
   });
@@ -2246,7 +2437,7 @@ $("saveEventBtn").addEventListener("click", function () {
     if (nonEmpty(f)) body[f] = Number(form.elements[f].value.trim());
   });
   ["reveal_time", "start_time"].forEach(function (f) {
-    if (nonEmpty(f)) body[f] = localInputValueToUtcIso(form.elements[f].value.trim());
+    if (nonEmpty(f)) body[f] = berlinInputValueToUtcIso(form.elements[f].value.trim());
   });
   if (nonEmpty("orga_phone")) body.orga_phone = form.elements["orga_phone"].value.trim();
   api("/api/orga/event", { method: "PUT", body: body }).then(function () {
