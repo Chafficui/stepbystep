@@ -76,7 +76,9 @@ Für einen Testlauf alternativ:
 
 Das setzt die Startzeit auf +15 Minuten und legt die Teams `TESTAAAA` und `TESTBBBB` an; mit `--dev` wird die Dev-Compose verwendet.
 
-In der Teilnehmer-App über **„Team beitreten"** mit Code + Name einloggen; pro Team sind maximal 2 Geräte möglich. Vor dem Eventstart muss jedes Team ein **Teamfoto** aufnehmen (einmal pro Team); es erscheint im Dashboard als Pin auf der Karte und in der App als eigener Positions-Pin. Die Orga kann ein Foto in der Team-Schublade zurücksetzen. Sind App-Daten verloren gegangen, entfernt die Orga den Teilnehmer im Dashboard, danach ist ein Neubeitritt möglich.
+In der Teilnehmer-App über **„Team beitreten"** mit Code + Name einloggen; pro Team sind maximal 2 Geräte möglich. Vor dem Eventstart muss jedes Team ein **Teamfoto** aufnehmen (einmal pro Team); es erscheint im Dashboard als Pin auf der Karte und in der App als eigener Positions-Pin. Die Orga kann ein Foto in der Team-Schublade zurücksetzen.
+
+Wird ein Teilnehmer aus der App geworfen (Sitzung abgelaufen, App-Daten verloren, neues Handy) kann er sich jederzeit selbst mit demselben Team-Code und demselben Namen neu anmelden — der bisherige Teilnehmer-Datensatz (inkl. Spur und Check-ins) wird auf das neue Gerät übertragen, ohne einen zweiten Platz zu belegen. Nur wenn der Name nicht mehr bekannt ist, muss die Orga den Teilnehmer im Dashboard entfernen, bevor ein Neubeitritt (als neuer Teilnehmer) möglich ist.
 
 ## 5. App bauen und verteilen
 
@@ -99,6 +101,43 @@ flutter build apk --release --dart-define=API_URL=https://<DOMAIN>
 Die APK liegt unter `build/app/outputs/flutter-apk/` und lässt sich per USB oder Link verteilen. Auf den Geräten muss „Unbekannte Quellen"/Sideloading erlaubt werden (ab Android 8 wird pro App gefragt).
 
 Für iOS ist ein Apple-Developer-Account nötig; Verteilung über TestFlight oder Kabel-Installation. Hintergrund-Location ist nur auf echten Geräten testbar — der Simulator ist ungeeignet.
+
+### iPhone-Installation über ein Mac (ohne TestFlight)
+
+Ohne kostenpflichtigen Apple-Developer-Account (99 $/Jahr) lässt sich die App trotzdem direkt per Kabel auf das eigene iPhone installieren — mit der kostenlosen Apple-ID als „Personal Team". Einschränkung: Die so signierte App läuft nur 7 Tage, danach muss sie erneut über Xcode installiert werden.
+
+1. **Xcode installieren** (Mac App Store, aktuelle Version) und einmal öffnen, damit die Lizenz akzeptiert und die Kommandozeilen-Tools nachinstalliert werden.
+2. **Flutter SDK installieren** (falls noch nicht vorhanden): [flutter.dev/setup](https://docs.flutter.dev/get-started/install/macos), danach `flutter doctor` ausführen und alle iOS-bezogenen Punkte (Xcode, CocoaPods) abarbeiten, bis sie grün sind.
+3. **Projekt vorbereiten:**
+   ```bash
+   cd app
+   flutter create . --platforms=ios   # ergänzt fehlende iOS-Plattformdateien, vorhandene bleiben
+   flutter pub get
+   dart run build_runner build -d     # drift-Datenbankcode generieren
+   ```
+4. **iPhone anschließen** (Kabel) und auf dem iPhone bei der Nachfrage „Diesem Computer vertrauen" bestätigen.
+5. **Xcode-Projekt öffnen:**
+   ```bash
+   open ios/Runner.xcworkspace
+   ```
+   (nicht `Runner.xcodeproj` — das Workspace bindet die CocoaPods-Abhängigkeiten ein.)
+6. In Xcode den **Runner**-Eintrag in der Projektnavigation anklicken, Tab **„Signing & Capabilities"**:
+   - **„Automatically manage signing"** aktivieren.
+   - Unter **„Team"** die eigene Apple-ID auswählen; falls sie fehlt: **Xcode → Settings/Einstellungen → Accounts → „+"** und mit der normalen Apple-ID anmelden (kein Developer-Programm nötig).
+   - Die **Bundle Identifier** auf etwas Eindeutiges ändern (z. B. `com.<name>.stepbystep`), da die kostenlose Signierung keine bereits vergebene ID verwenden darf.
+7. Oben in Xcode in der Geräteauswahl (neben dem Run-Button) das eigene iPhone auswählen (nicht „Any iOS Device" und kein Simulator).
+8. Zurück im Terminal die App mit der Server-Adresse bauen und direkt installieren:
+   ```bash
+   flutter devices                     # Geräte-ID des iPhones ablesen
+   flutter run --release \
+     --dart-define=API_URL=https://<DOMAIN> \
+     -d <iphone-geraete-id>
+   ```
+   Alternativ in Xcode selbst auf den Run-Button (▶) drücken — dann vorher in der Scheme-Auswahl auf „Release" statt „Debug" stellen, sonst läuft die App langsamer und das Hintergrund-Tracking lässt sich schlechter beurteilen.
+9. Beim ersten Start verweigert iOS die App mit **„Nicht vertrauenswürdiger Entwickler"**: Auf dem iPhone unter **Einstellungen → Allgemein → VPN & Geräteverwaltung** den eigenen Apple-ID-Eintrag öffnen und **„Vertrauen"** bestätigen. Danach startet die App normal.
+10. Nach 7 Tagen läuft die Signierung ab (App startet nicht mehr) — iPhone erneut per Kabel anschließen und Schritt 8 wiederholen, um sie zu erneuern.
+
+Für eine Verteilung an mehrere Teilnehmer-iPhones ohne eigenes Kabel-Setup pro Gerät ist ein kostenpflichtiger Apple-Developer-Account plus TestFlight der praktikablere Weg.
 
 Hinweis: Erst wenn `flutter analyze` und `flutter test` sauber durchlaufen, bauen — der Code wurde ohne Toolchain geschrieben (siehe `DECISIONS.md`).
 

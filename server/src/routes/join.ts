@@ -62,6 +62,36 @@ export async function joinRoutes(app: FastifyInstance): Promise<void> {
         return;
       }
 
+      // Gleicher Code + gleicher Name, aber neues Gerät (Neuinstallation,
+      // Gerätewechsel, Token verloren): den bisherigen Teilnehmer-Datensatz
+      // (inkl. Spur/Check-ins) auf das neue Gerät umziehen, statt einen
+      // zweiten Slot zu belegen. Ohne das würde ein "Team ist bereits voll"
+      // den Wiedereinstieg blockieren, solange der alte Slot noch steht —
+      // bisher musste dafür die Orga den Teilnehmer erst im Dashboard
+      // entfernen.
+      const byName = await query<{ id: string; team_id: string; team_name: string; display_name: string }>(
+        `SELECT p.id, p.team_id, t.name AS team_name, p.display_name
+         FROM participant p JOIN team t ON t.id = p.team_id
+         WHERE p.team_id = $1 AND lower(p.display_name) = lower($2)
+         ORDER BY p.joined_at DESC LIMIT 1`,
+        [teamRow.id, display_name]
+      );
+      if (byName.rows.length > 0) {
+        const participant = byName.rows[0];
+        await query('UPDATE participant SET device_id = $1, token_hash = $2 WHERE id = $3', [
+          device_id,
+          sha256Hex(token),
+          participant.id,
+        ]);
+        void reply.send({
+          token,
+          team_id: participant.team_id,
+          team_name: participant.team_name,
+          display_name: participant.display_name,
+        });
+        return;
+      }
+
       const count = await query<{ count: string }>(
         'SELECT count(*) AS count FROM participant WHERE team_id = $1',
         [teamRow.id]
