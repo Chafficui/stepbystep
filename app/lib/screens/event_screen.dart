@@ -10,6 +10,7 @@ import '../api/api_client.dart';
 import '../db/app_database.dart';
 import '../models/event_config.dart';
 import '../services/reminder_scheduler.dart';
+import '../services/team_photo_service.dart';
 import '../state/services.dart';
 import '../state/session_store.dart';
 import '../tracking/tracking_controller.dart';
@@ -25,6 +26,7 @@ import 'live_tab.dart';
 import 'map_screen.dart';
 import 'rank_screen.dart';
 import 'sos_bar.dart';
+import 'team_photo_screen.dart';
 
 /// Wartezimmer + laufendes Event (Shell).
 ///
@@ -64,7 +66,8 @@ class _BatteryAdapter implements BatteryStatusSource {
   int? get currentPercent => AppServices.instance.battery.currentPercent;
 }
 
-class _EventScreenState extends State<EventScreen> {
+class _EventScreenState extends State<EventScreen>
+    with WidgetsBindingObserver {
   final ApiClient _api = ApiClient();
   TrackingController get _tracking =>
       widget.tracking ?? AppServices.instance.tracking;
@@ -73,6 +76,11 @@ class _EventScreenState extends State<EventScreen> {
       widget.battery ?? const _BatteryAdapter();
 
   Timer? _ticker;
+  Timer? _photoTimer;
+
+  /// Teamfoto-Zustand (null in Tests ohne AppServices). Der Sekunden-
+  /// Ticker baut die UI ohnehin neu, daher kein eigener Listener nötig.
+  TeamPhotoService? get _teamPhoto => AppServices.instanceOrNull?.teamPhoto;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   StreamSubscription<TrackingState>? _trackingSub;
   StreamSubscription<UploadStats>? _statsSub;
@@ -98,7 +106,13 @@ class _EventScreenState extends State<EventScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadEvent();
+    // Teamfoto regelmäßig abgleichen (Orga-Reset / Foto vom Teamkollegen).
+    unawaited(_teamPhoto?.refresh());
+    _photoTimer = Timer.periodic(const Duration(minutes: 3), (_) {
+      unawaited(_teamPhoto?.refresh());
+    });
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
       _syncStatus();
@@ -121,13 +135,35 @@ class _EventScreenState extends State<EventScreen> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_teamPhoto?.refresh());
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _photoTimer?.cancel();
     _ticker?.cancel();
     _connectivitySub?.cancel();
     _trackingSub?.cancel();
     _statsSub?.cancel();
     _statusN.dispose();
     super.dispose();
+  }
+
+  /// Teamfoto aufnehmen / neu aufnehmen (Live-Tab).
+  Future<void> _openTeamPhoto() async {
+    await Navigator.of(context).push<void>(MaterialPageRoute<void>(
+      builder: (_) => const TeamPhotoScreen(retake: true),
+    ));
+  }
+
+  /// Pull-to-refresh im Live-Tab: Event und Teamfoto.
+  Future<void> _refreshLive() async {
+    unawaited(_teamPhoto?.refresh());
+    await _loadEvent();
   }
 
   Future<void> _loadEvent() async {
@@ -271,13 +307,15 @@ class _EventScreenState extends State<EventScreen> {
           error: _error,
           driftWarning: driftWarning,
           nextCheckin: config == null ? null : _nextCheckin(config),
-          onRefresh: _loadEvent,
+          onRefresh: _refreshLive,
           onToggleTracking: _toggleTracking,
           onAbort: _abort,
           onOpenStatus: _openStatusSheet,
           onOpenCheckin: () => setState(() => _selectedTab = 2),
           // Tracking läuft nach Event-Ende bewusst weiter (Abholung).
           endSection: EndScreenBody(tracking: _tracking, isRunning: running),
+          teamPhoto: _teamPhoto?.state.value,
+          onTeamPhoto: _openTeamPhoto,
         );
     }
 

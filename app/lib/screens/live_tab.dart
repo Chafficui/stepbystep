@@ -6,6 +6,7 @@ import '../brand/sbs_colors.dart';
 import '../brand/sbs_theme.dart';
 import '../brand/sbs_widgets.dart';
 import '../models/event_config.dart';
+import '../services/team_photo_service.dart';
 import '../tracking/tracking_controller.dart';
 import '../tracking/upload_service.dart';
 
@@ -91,6 +92,8 @@ class LiveTab extends StatelessWidget {
     this.error,
     this.driftWarning = false,
     this.endSection,
+    this.teamPhoto,
+    this.onTeamPhoto,
   });
 
   final EventConfig? config;
@@ -109,6 +112,12 @@ class LiveTab extends StatelessWidget {
 
   /// Abschluss-Inhalt (EndScreenBody), nur nach Event-Ende.
   final Widget? endSection;
+
+  /// Stand des Teamfotos (null = Karte ausgeblendet, z. B. in Tests).
+  final TeamPhotoState? teamPhoto;
+
+  /// Öffnet den Teamfoto-Screen (Aufnehmen / Neu aufnehmen).
+  final VoidCallback? onTeamPhoto;
 
   @override
   Widget build(BuildContext context) {
@@ -131,6 +140,8 @@ class LiveTab extends StatelessWidget {
           color: SbsColors.signal,
           icon: Icons.warning_amber_rounded,
         ),
+      if (teamPhoto != null && teamPhoto!.missing && !over)
+        _TeamPhotoMissingCard(onTap: onTeamPhoto),
       if (cfg == null)
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 80),
@@ -153,6 +164,10 @@ class LiveTab extends StatelessWidget {
             next: nextCheckin,
             onTap: onOpenCheckin,
           ),
+          const SizedBox(height: 16),
+        ],
+        if (teamPhoto != null && !teamPhoto!.missing) ...[
+          _TeamPhotoCard(photo: teamPhoto!, onRetake: onTeamPhoto),
           const SizedBox(height: 16),
         ],
         _InfoCard(config: cfg),
@@ -497,6 +512,112 @@ class _NextCheckinCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Warnkarte: Teamfoto fehlt (Pflicht vor dem Start).
+class _TeamPhotoMissingCard extends StatelessWidget {
+  const _TeamPhotoMissingCard({required this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: SbsCard(
+        borderColor: SbsColors.warn,
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.photo_camera_front_outlined,
+                    color: SbsColors.warn, size: 22),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text('Teamfoto fehlt – vor dem Start Pflicht',
+                      style: SbsText.body(
+                          size: 15,
+                          weight: FontWeight.w700,
+                          color: SbsColors.warn)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Ohne Foto erkennt euch die Orga nicht und euer Pin auf der '
+              'Karte bleibt leer.',
+              style: SbsText.body(size: 13.5, color: SbsColors.fgMuted),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: SbsColors.warn,
+                minimumSize: const Size.fromHeight(48),
+              ),
+              onPressed: onTap,
+              child: Text('Teamfoto aufnehmen'.toUpperCase(),
+                  style: SbsText.display(16, color: SbsColors.onFg)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Teamfoto-Karte: Vorschau + „Neu aufnehmen".
+class _TeamPhotoCard extends StatelessWidget {
+  const _TeamPhotoCard({required this.photo, required this.onRetake});
+
+  final TeamPhotoState photo;
+  final VoidCallback? onRetake;
+
+  @override
+  Widget build(BuildContext context) {
+    final bytes = photo.bytes;
+    return SbsCard(
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: SbsColors.surface2,
+              border: Border.all(color: SbsColors.fg, width: 2),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: bytes == null
+                ? const Icon(Icons.groups_outlined, color: SbsColors.fgFaint)
+                : Image.memory(bytes,
+                    fit: BoxFit.cover, cacheWidth: 192, gaplessPlayback: true),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SbsLabel('Teamfoto'),
+                const SizedBox(height: 4),
+                Text('Euer Pin auf der Karte',
+                    style: SbsText.body(weight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, 44),
+                padding: const EdgeInsets.symmetric(horizontal: 14)),
+            onPressed: onRetake,
+            child: const Text('Neu aufnehmen'),
+          ),
+        ],
       ),
     );
   }

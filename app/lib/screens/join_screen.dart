@@ -196,11 +196,12 @@ class _JoinScreenState extends State<JoinScreen> {
         padding: const EdgeInsets.all(14),
         child: Text(
           'Datenschutz-Hinweis: Während des Events werden dein '
-          'Standort (GPS), Akkustand und deine Check-in-Fotos bzw. '
-          '-Videos erfasst. Diese Daten sind nur für dein eigenes '
-          'Team und die Organisation sichtbar – nicht für andere '
-          'Teilnehmer. Nach dem Event kannst du im Team verlangen, '
-          'dass die Daten gelöscht werden.',
+          'Standort (GPS), Akkustand, deine Check-in-Fotos bzw. '
+          '-Videos und das Teamfoto erfasst. Diese Daten sind nur für '
+          'dein eigenes Team und die Organisation sichtbar – nicht für '
+          'andere Teilnehmer. Das Teamfoto wird zusammen mit den '
+          'Event-Daten gelöscht. Nach dem Event kannst du im Team '
+          'verlangen, dass die Daten gelöscht werden.',
           style: SbsText.body(size: 12, color: SbsColors.fgMuted),
         ),
       ),

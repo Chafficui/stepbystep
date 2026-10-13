@@ -22,6 +22,8 @@
 | Server-Integrationstests | Laufen nur mit Docker (in der Build-Umgebung nicht verfügbar, daher übersprungen) | Die Testsuite ist vollständig vorhanden und muss auf dem VPS/einer Docker-Maschine einmal ausgeführt werden. |
 | Referrer-Policy | `strict-origin-when-cross-origin` statt `no-referrer` (Server-Header und Caddyfile) | OSM-Kachelserver verlangen eine Identifizierung per Referer oder User-Agent und blocken ohne Referer („usage policy") — Origin statt voller URL genügt. |
 | Ranking leer | `GET /api/orga/ranking` liefert bei leerer Rangliste `200` mit `computed_at: null` statt `404` | Verhindert wiederkehrende Konsolen-Fehler beim Laden des Dashboards; semantisch keine Abwesenheit einer Ressource. |
+| Teamfoto | Pflicht pro Team vor Eventstart (ein Foto je Team, egal von welchem Gerät); nach dem Start oder ohne Netz kann übersprungen werden („Später" bzw. Weiter zum Event mit Hinweis-Karte); Orga kann das Foto im Dashboard zurücksetzen → Neuaufnahme | Erkennung der Teams und Karten-Pin, ohne jemanden mitten im Event auszusperren — der SOS-Knopf muss immer erreichbar bleiben. |
+| Team-Spur in der App | `GET /api/my-track` liefert die Punkte aller Geräte des eigenen Teams (max. 5000); die App ergänzt lokal noch nicht gesendete, neuere Punkte | Beide Teilnehmer sehen dieselbe Linie; offline bleibt die eigene Spur sichtbar. Teilnehmer sehen nie Punkte anderer Teams. |
 
 ## Offene Punkte / bekannte Einschränkungen
 

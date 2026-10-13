@@ -76,7 +76,7 @@ Für einen Testlauf alternativ:
 
 Das setzt die Startzeit auf +15 Minuten und legt die Teams `TESTAAAA` und `TESTBBBB` an; mit `--dev` wird die Dev-Compose verwendet.
 
-In der Teilnehmer-App über **„Team beitreten"** mit Code + Name einloggen; pro Team sind maximal 2 Geräte möglich. Sind App-Daten verloren gegangen, entfernt die Orga den Teilnehmer im Dashboard, danach ist ein Neubeitritt möglich.
+In der Teilnehmer-App über **„Team beitreten"** mit Code + Name einloggen; pro Team sind maximal 2 Geräte möglich. Vor dem Eventstart muss jedes Team ein **Teamfoto** aufnehmen (einmal pro Team); es erscheint im Dashboard als Pin auf der Karte und in der App als eigener Positions-Pin. Die Orga kann ein Foto in der Team-Schublade zurücksetzen. Sind App-Daten verloren gegangen, entfernt die Orga den Teilnehmer im Dashboard, danach ist ein Neubeitritt möglich.
 
 ## 5. App bauen und verteilen
 

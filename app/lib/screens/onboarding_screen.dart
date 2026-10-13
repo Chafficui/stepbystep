@@ -10,7 +10,7 @@ import '../brand/sbs_theme.dart';
 import '../brand/sbs_widgets.dart';
 import '../services/battery_optimization.dart';
 import '../state/session_store.dart';
-import 'event_screen.dart';
+import 'team_photo_gate.dart';
 
 /// Schritt-für-Schritt Berechtigungs-Checkliste mit Live-Status.
 ///
@@ -173,7 +173,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   void _finish() => Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) => EventScreen(sessionStore: widget.sessionStore),
+          builder: (_) => TeamPhotoGate(sessionStore: widget.sessionStore),
         ),
       );
 

@@ -1,5 +1,6 @@
 import '../api/api_client.dart';
 import '../db/app_database.dart';
+import '../services/team_photo_service.dart';
 import '../tracking/battery_monitor.dart';
 import '../tracking/tracking_service.dart';
 import '../tracking/upload_service.dart';
@@ -28,6 +29,7 @@ class AppServices {
   late final BatteryMonitor battery;
   late final TrackingService tracking;
   late final UploadService upload;
+  late final TeamPhotoService teamPhoto;
 
   /// Wird vom Auth-Layer gesetzt (Rückkehr zum Join-Screen bei 401).
   static void Function()? onAuthExpired;
@@ -50,6 +52,12 @@ class AppServices {
       session: s.session,
       onAuthExpired: onAuthExpired,
     );
+    s.teamPhoto = TeamPhotoService(
+      api: s.api,
+      session: s.session,
+      onAuthExpired: () => onAuthExpired?.call(),
+    );
+    await s.teamPhoto.loadCache();
     _instance = s;
     return s;
   }
