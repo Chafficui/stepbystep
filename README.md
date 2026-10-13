@@ -172,6 +172,7 @@ Ehrlicher Hinweis: Das Hintergrund-Verhalten muss auf echten Geräten geprüft w
 | `POST /api/orga/login` | Mit `ORGA_PASSWORD` anmelden, Sitzungstoken erhalten |
 | `GET /api/orga/event` / `PUT /api/orga/event` | Event-Einstellungen lesen/ändern |
 | `GET /api/orga/teams` / `POST /api/orga/teams` | Teams auflisten/anlegen |
+| `DELETE /api/orga/teams/:id` | Team endgültig löschen (inkl. Positions-, Check-in- und Alarmdaten sowie Mediendateien) |
 | `DELETE /api/orga/teams/:id/participants/:pid` | Teilnehmer aus Team entfernen (Neubeitritt ermöglichen) |
 | `GET /api/orga/overview` | Live-Übersicht aller Teams |
 | `GET /api/orga/track` | Aufgezeichnete Route eines Teams abrufen |

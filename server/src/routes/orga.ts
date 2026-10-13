@@ -208,6 +208,28 @@ export async function orgaRoutes(app: FastifyInstance): Promise<void> {
     void reply.code(204).send();
   });
 
+  app.delete('/orga/teams/:id', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const team = await query<{ photo_path: string | null }>(
+      'SELECT photo_path FROM team WHERE id = $1',
+      [id]
+    );
+    if (team.rows.length === 0) {
+      void reply.code(404).send({ error: 'Team nicht gefunden' });
+      return;
+    }
+    const checkins = await query<{ media_path: string }>(
+      'SELECT media_path FROM checkin WHERE team_id = $1',
+      [id]
+    );
+    // DB-Zeilen zuerst (Fremdschlüssel-Kaskade räumt participant/location_point/
+    // checkin/alert/ranking_snapshot mit auf), Mediendateien danach best-effort.
+    await query('DELETE FROM team WHERE id = $1', [id]);
+    await deletePhotoFile(team.rows[0].photo_path);
+    await Promise.all(checkins.rows.map((c) => deletePhotoFile(c.media_path)));
+    void reply.code(204).send();
+  });
+
   // ------------------------------------------------------------------
   // Feature routes (live tracking, check-ins, alerts, ranking, media).
   // All of these are covered by the requireOrga onRequest hook above.

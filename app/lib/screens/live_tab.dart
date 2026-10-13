@@ -123,12 +123,21 @@ class LiveTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final cfg = config;
     final over = cfg != null && cfg.isOver(now);
-    var i = 0;
+    // Stabile Keys: verhindern, dass ein später eintreffendes Element
+    // (Config-Fetch, Teamfoto-Abgleich, Connectivity-/Tracking-Stream) alle
+    // nachfolgenden Karten als "neu" erscheinen lässt und ihre Einfahr-
+    // Animation erneut abspielt (Positions-Matching ohne Key).
     final children = <Widget>[
       if (error != null)
-        _Banner(text: error!, color: SbsColors.signal, icon: Icons.error_outline),
+        _Banner(
+          key: const ValueKey('error'),
+          text: error!,
+          color: SbsColors.signal,
+          icon: Icons.error_outline,
+        ),
       if (driftWarning)
         const _Banner(
+          key: ValueKey('drift'),
           text: 'Uhrzeit des Handys prüfen – sie weicht deutlich von der '
               'Serverzeit ab.',
           color: SbsColors.warn,
@@ -136,29 +145,37 @@ class LiveTab extends StatelessWidget {
         ),
       if (status.stale)
         const _Banner(
+          key: ValueKey('stale'),
           text: 'Seit 10 Minuten kein neuer Punkt – Tracking prüfen!',
           color: SbsColors.signal,
           icon: Icons.warning_amber_rounded,
         ),
       if (teamPhoto != null && teamPhoto!.missing && !over)
-        _TeamPhotoMissingCard(onTap: onTeamPhoto),
+        _TeamPhotoMissingCard(
+            key: const ValueKey('teamPhotoMissing'), onTap: onTeamPhoto),
       if (cfg == null)
         const Padding(
+          key: ValueKey('loading'),
           padding: EdgeInsets.symmetric(vertical: 80),
           child: Center(child: CircularProgressIndicator()),
         )
       else ...[
-        _Hero(config: cfg, now: now),
+        _Hero(key: const ValueKey('hero'), config: cfg, now: now),
         const SizedBox(height: 20),
-        if (!over) _TrackingButton(running: status.running, onTap: onToggleTracking),
+        if (!over)
+          _TrackingButton(
+              key: const ValueKey('trackingBtn'),
+              running: status.running,
+              onTap: onToggleTracking),
         if (!over) const SizedBox(height: 16),
-        _ChipsRow(status: status, onTap: onOpenStatus),
+        _ChipsRow(key: const ValueKey('chips'), status: status, onTap: onOpenStatus),
         const SizedBox(height: 16),
         if (over && endSection != null) ...[
-          endSection!,
+          KeyedSubtree(key: const ValueKey('checkinSlot'), child: endSection!),
           const SizedBox(height: 16),
         ] else ...[
           _NextCheckinCard(
+            key: const ValueKey('checkinSlot'),
             config: cfg,
             now: now,
             next: nextCheckin,
@@ -167,13 +184,16 @@ class LiveTab extends StatelessWidget {
           const SizedBox(height: 16),
         ],
         if (teamPhoto != null && !teamPhoto!.missing) ...[
-          _TeamPhotoCard(photo: teamPhoto!, onRetake: onTeamPhoto),
+          _TeamPhotoCard(
+              key: const ValueKey('teamPhotoCard'),
+              photo: teamPhoto!,
+              onRetake: onTeamPhoto),
           const SizedBox(height: 16),
         ],
-        _InfoCard(config: cfg),
+        _InfoCard(key: const ValueKey('info'), config: cfg),
       ],
       const SizedBox(height: 28),
-      _EmergencySection(onAbort: onAbort),
+      _EmergencySection(key: const ValueKey('emergency'), onAbort: onAbort),
       const SizedBox(height: 12),
     ];
 
@@ -184,17 +204,15 @@ class LiveTab extends StatelessWidget {
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        children: [
-          for (final c in children)
-            if (c is SizedBox) c else SlideIn(index: i++, child: c),
-        ],
+        children: sbsStagger(children),
       ),
     );
   }
 }
 
 class _Banner extends StatelessWidget {
-  const _Banner({required this.text, required this.color, required this.icon});
+  const _Banner(
+      {super.key, required this.text, required this.color, required this.icon});
 
   final String text;
   final Color color;
@@ -226,7 +244,7 @@ class _Banner extends StatelessWidget {
 
 /// Hero: Event-Fortschritt als Stoppuhr-Ring.
 class _Hero extends StatelessWidget {
-  const _Hero({required this.config, required this.now});
+  const _Hero({super.key, required this.config, required this.now});
 
   final EventConfig config;
   final DateTime now;
@@ -319,7 +337,7 @@ class _Hero extends StatelessWidget {
 }
 
 class _TrackingButton extends StatelessWidget {
-  const _TrackingButton({required this.running, required this.onTap});
+  const _TrackingButton({super.key, required this.running, required this.onTap});
 
   final bool running;
   final VoidCallback onTap;
@@ -350,7 +368,7 @@ class _TrackingButton extends StatelessWidget {
 }
 
 class _ChipsRow extends StatelessWidget {
-  const _ChipsRow({required this.status, required this.onTap});
+  const _ChipsRow({super.key, required this.status, required this.onTap});
 
   final StatusData status;
   final VoidCallback onTap;
@@ -444,6 +462,7 @@ class StatusChip extends StatelessWidget {
 
 class _NextCheckinCard extends StatelessWidget {
   const _NextCheckinCard({
+    super.key,
     required this.config,
     required this.now,
     required this.next,
@@ -519,7 +538,7 @@ class _NextCheckinCard extends StatelessWidget {
 
 /// Warnkarte: Teamfoto fehlt (Pflicht vor dem Start).
 class _TeamPhotoMissingCard extends StatelessWidget {
-  const _TeamPhotoMissingCard({required this.onTap});
+  const _TeamPhotoMissingCard({super.key, required this.onTap});
 
   final VoidCallback? onTap;
 
@@ -572,7 +591,7 @@ class _TeamPhotoMissingCard extends StatelessWidget {
 
 /// Teamfoto-Karte: Vorschau + „Neu aufnehmen".
 class _TeamPhotoCard extends StatelessWidget {
-  const _TeamPhotoCard({required this.photo, required this.onRetake});
+  const _TeamPhotoCard({super.key, required this.photo, required this.onRetake});
 
   final TeamPhotoState photo;
   final VoidCallback? onRetake;
@@ -624,7 +643,7 @@ class _TeamPhotoCard extends StatelessWidget {
 }
 
 class _InfoCard extends StatelessWidget {
-  const _InfoCard({required this.config});
+  const _InfoCard({super.key, required this.config});
 
   final EventConfig config;
 
@@ -655,7 +674,7 @@ class _InfoCard extends StatelessWidget {
 }
 
 class _EmergencySection extends StatelessWidget {
-  const _EmergencySection({required this.onAbort});
+  const _EmergencySection({super.key, required this.onAbort});
 
   final VoidCallback onAbort;
 
