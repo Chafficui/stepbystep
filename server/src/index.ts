@@ -11,6 +11,7 @@ import { meRoutes } from './routes/me.js';
 import { participantEventRoutes } from './routes/event.js';
 import { orgaRoutes } from './routes/orga.js';
 import { participantFeatureRoutes } from './routes/features.js';
+import { teamPhotoRoutes } from './routes/teamphoto.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -92,6 +93,7 @@ export async function buildApp() {
   await app.register(participantEventRoutes, { prefix: '/api' });
   await app.register(orgaRoutes, { prefix: '/api' });
   await app.register(participantFeatureRoutes, { prefix: '/api' });
+  await app.register(teamPhotoRoutes, { prefix: '/api' });
 
   return app;
 }

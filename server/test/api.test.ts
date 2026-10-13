@@ -88,6 +88,7 @@ d('API integration', () => {
       team_name: team.name,
       team_status: 'active',
       display_name: 'Alice',
+      team_photo_updated_at: null,
     });
   });
 

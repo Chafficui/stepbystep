@@ -2,204 +2,867 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Orga Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#050605">
+<title>SBS24 Orga</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1/dist/leaflet.css">
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1/dist/leaflet.min.js"></script>
 <style>
-  * { box-sizing: border-box; }
-  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background:#f2f4f8; color:#1c2333; }
-  header { position:sticky; top:0; z-index:1200; background:#1c2333; color:#fff; padding:10px 16px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
-  header h1 { font-size:18px; margin:0; flex:1 1 auto; }
-  header .stand { font-size:13px; color:#cbd3e1; }
-  header button { background:#3b4a6b; color:#fff; border:0; border-radius:6px; padding:6px 12px; cursor:pointer; }
-  main { max-width:1200px; margin:0 auto; padding:16px; }
-  section.card { background:#fff; border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,.08); padding:16px; margin-bottom:16px; }
-  h2 { font-size:16px; margin:0 0 10px; }
-  .alert-item { border-left:6px solid; padding:10px 12px; margin-bottom:8px; border-radius:6px; background:#fdf3f3; display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap; }
-  .alert-item.sos { border-color:#d92d20; background:#fdecec; }
-  .alert-item.abort { border-color:#f79009; background:#fef4e6; }
-  .alert-item .meta { flex:1 1 260px; }
-  .alert-item .actions { display:flex; gap:8px; align-items:center; }
-  button { cursor:pointer; }
-  .btn { background:#1c2333; color:#fff; border:0; border-radius:6px; padding:6px 12px; font-size:13px; }
-  .btn.secondary { background:#e4e8f0; color:#1c2333; }
-  .btn.link { background:none; color:#0b5cd5; text-decoration:underline; padding:0; border:0; font-size:13px; }
-  .btn.danger { background:#d92d20; color:#fff; }
-  #map { height:420px; border-radius:8px; z-index:1; }
-  table { width:100%; border-collapse:collapse; font-size:14px; }
-  th, td { text-align:left; padding:8px 6px; border-bottom:1px solid #e4e8f0; vertical-align:top; }
-  th { font-size:12px; color:#5a6478; text-transform:uppercase; letter-spacing:.03em; }
-  .badge { display:inline-block; border-radius:10px; padding:2px 8px; font-size:11px; font-weight:600; margin-right:4px; color:#fff; }
-  .badge.silent { background:#5941f2; }
-  .badge.overdue { background:#d92d20; }
-  .badge.speed { background:#f79009; }
-  .status-active { color:#0a7d34; font-weight:600; }
-  .status-aborted { color:#d92d20; font-weight:600; }
-  .status-finished { color:#5941f2; font-weight:600; }
-  .teamrow td { cursor:pointer; }
-  .details-row td { background:#f7f9fc; }
-  .battery.low { color:#d92d20; font-weight:600; }
-  details.participants summary { cursor:pointer; color:#0b5cd5; }
-  .participants li { margin:4px 0; }
-  .form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; }
-  .form-grid label { display:flex; flex-direction:column; font-size:12px; color:#5a6478; gap:4px; }
-  .form-grid input { padding:8px; border:1px solid #c9d0dd; border-radius:6px; font-size:14px; }
-  .form-grid input[aria-invalid="true"] { border-color:#b42318; background:#fdf3f3; }
-  .field-err { color:#b42318; font-size:11px; }
-  .msg { padding:8px 10px; border-radius:6px; font-size:13px; margin:8px 0; }
-  .msg.err { background:#fdecec; color:#b42318; }
-  .msg.ok { background:#e6f6ec; color:#0a7d34; }
-  .newteam { background:#e6f6ec; border-radius:8px; padding:12px; margin-top:10px; }
-  .newteam .code { font-family:ui-monospace,monospace; font-size:24px; font-weight:700; letter-spacing:.08em; }
-  #login { max-width:360px; margin:12vh auto; }
-  #login input { width:100%; padding:10px; border:1px solid #c9d0dd; border-radius:6px; font-size:15px; }
-  .strip { display:flex; gap:12px; overflow-x:auto; padding:8px 0; }
-  .checkin { flex:0 0 auto; width:220px; background:#f7f9fc; border-radius:8px; padding:8px; }
-  .checkin img, .checkin video { width:100%; border-radius:6px; background:#000; }
-  .checkin .cap { font-size:12px; color:#5a6478; margin-top:4px; }
-  .hidden { display:none !important; }
-  .muted { color:#5a6478; font-size:13px; }
-  .ranking td:first-child { font-weight:700; width:40px; }
-  dialog { border:0; border-radius:10px; box-shadow:0 8px 40px rgba(0,0,0,.25); max-width:760px; width:92%; padding:0; }
-  dialog .dlg-body { padding:16px; max-height:80vh; overflow:auto; }
-  dialog::backdrop { background:rgba(0,0,0,.45); }
+/* =========================================================
+   SBS24 Orga-Dashboard – Design nach BRAND.md (nur dunkel)
+   ========================================================= */
+@font-face { font-family: "Saira"; font-weight: 400; font-style: normal; font-display: swap; src: url("assets/fonts/saira-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Saira"; font-weight: 500; font-style: normal; font-display: swap; src: url("assets/fonts/saira-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Saira"; font-weight: 600; font-style: normal; font-display: swap; src: url("assets/fonts/saira-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Saira"; font-weight: 700; font-style: normal; font-display: swap; src: url("assets/fonts/saira-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Saira"; font-weight: 700; font-style: italic; font-display: swap; src: url("assets/fonts/saira-700-italic.woff2") format("woff2"); }
+@font-face { font-family: "Saira"; font-weight: 800; font-style: italic; font-display: swap; src: url("assets/fonts/saira-800-italic.woff2") format("woff2"); }
+
+:root {
+  --bg: #050605;
+  --surface: #0D0E0D;
+  --surface-2: #151715;
+  --line: #262826;
+  --line-strong: #3A3C39;
+  --fg: #EEEDE6;
+  --fg-muted: #9A9C95;
+  --fg-faint: #5E605A;
+  --on-fg: #050605;
+  --signal: #FF453A;
+  --warn: #FFB020;
+  --ok: #4ADE80;
+  --info: #A5A6FF;
+  --r-sm: 4px;
+  --r-md: 10px;
+  --font: "Saira", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --sidebar-w: 232px;
+  --tabbar-h: 62px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: var(--font); font-weight: 400; font-size: 15px; line-height: 1.45;
+  -webkit-font-smoothing: antialiased; font-synthesis: none;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: var(--fg); }
+.hidden { display: none !important; }
+:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+/* ---- Typografie ---- */
+.h-display, h1, h2, h3 { font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: .02em; margin: 0; line-height: 1.1; }
+.num { font-weight: 700; font-style: italic; font-variant-numeric: tabular-nums; }
+.label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .12em; color: var(--fg-muted); }
+.muted { color: var(--fg-muted); font-size: 13px; }
+.faint { color: var(--fg-faint); }
+
+/* ---- Striche (Trenner) ---- */
+.ticks { display: inline-flex; gap: 5px; align-items: center; }
+.ticks i { display: block; width: 3px; height: 12px; background: var(--line-strong); transform: skewX(-18deg); }
+.ticks i:first-child { background: var(--fg); }
+
+/* ---- Buttons ---- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 0; background: var(--fg); color: var(--on-fg);
+  padding: 9px 20px; min-height: 38px;
+  font-weight: 700; font-style: italic; font-size: 13px; text-transform: uppercase; letter-spacing: .06em;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  text-decoration: none; white-space: nowrap;
+  transition: background .15s, opacity .15s;
+}
+.btn:hover { background: #fff; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn.secondary { background: var(--line-strong); color: var(--fg); }
+.btn.secondary:hover { background: #4a4c49; }
+.btn.danger { background: var(--signal); color: var(--on-fg); }
+.btn.danger:hover { background: #ff6a60; }
+.btn.small { min-height: 30px; padding: 5px 14px; font-size: 11px; }
+.btn svg { width: 16px; height: 16px; flex: none; }
+.link-btn { background: none; border: 0; padding: 0; color: var(--fg); text-decoration: underline; text-underline-offset: 3px; font-size: 13px; }
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px;
+  background: transparent; border: 1px solid var(--line-strong); border-radius: var(--r-sm); color: var(--fg);
+  transition: background .15s, border-color .15s;
+}
+.icon-btn:hover { background: var(--surface-2); border-color: var(--fg-faint); }
+.icon-btn svg { width: 18px; height: 18px; }
+.icon-btn.busy svg { animation: spin .9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- Badges ---- */
+.badge {
+  display: inline-block; padding: 1px 9px; margin: 0 4px 3px 0; font-size: 11px; font-weight: 700; font-style: italic;
+  text-transform: uppercase; letter-spacing: .05em; color: var(--on-fg); background: var(--fg-muted);
+  clip-path: polygon(4px 0, 100% 0, calc(100% - 4px) 100%, 0 100%);
+}
+.badge.silent { background: var(--info); }
+.badge.overdue { background: var(--signal); }
+.badge.speed { background: var(--warn); }
+.badge.nophoto { background: var(--warn); }
+
+/* ---- Team-Fotos ---- */
+.avatar {
+  display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; flex: none; overflow: hidden;
+  background: var(--surface-2) center / cover no-repeat; border: 2px solid var(--c, var(--line-strong)); color: var(--fg-muted);
+  font-size: 12px; font-weight: 800; font-style: italic; letter-spacing: .02em;
+}
+.avatar.sm { width: 30px; height: 30px; font-size: 11px; }
+.nm-cell { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.dphoto { margin-top: 16px; }
+.dphoto .frame { width: 100%; aspect-ratio: 4 / 3; border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--line-strong); background: var(--surface-2); display: grid; place-items: center; }
+.dphoto .frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dphoto .frame .muted { padding: 12px; text-align: center; }
+.dphoto .dp-actions { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.pop-photo { display: block; width: 220px; max-width: 100%; border-radius: var(--r-sm); margin: 0 0 8px; }
+
+/* ---- Status ---- */
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--fg-faint); flex: none; }
+.dot.active { background: var(--ok); }
+.dot.aborted { background: var(--warn); }
+.dot.finished { background: transparent; border: 2px solid var(--fg-muted); }
+.status-text { font-weight: 600; text-transform: uppercase; letter-spacing: .08em; font-size: 12px; }
+.status-text.active { color: var(--ok); }
+.status-text.aborted { color: var(--warn); }
+.status-text.finished { color: var(--fg-muted); }
+.battery.low { color: var(--signal); font-weight: 700; }
+
+/* ---- Karten / Formulare ---- */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 18px; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.card-head h2 { font-size: 17px; }
+.field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.field > span.label { }
+input[type=text], input[type=password], input[type=number], input[type=datetime-local], input[type=search] {
+  width: 100%; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm);
+  padding: 9px 11px; font-size: 15px; color: var(--fg); min-height: 40px;
+}
+input::placeholder { color: var(--fg-faint); }
+input:focus { outline: none; border-color: var(--fg); }
+input[readonly] { color: var(--fg-muted); border-style: dashed; }
+input[aria-invalid="true"] { border-color: var(--signal); }
+.tz-tag { color: var(--fg-faint); font-size: 10px; letter-spacing: .08em; margin-left: 4px; }
+.tz-note { font-size: 12px; margin: 0 0 10px; }
+.field-err { color: var(--signal); font-size: 12px; min-height: 0; }
+.msg { padding: 9px 12px; border-radius: var(--r-sm); font-size: 13px; margin: 10px 0 0; border-left: 3px solid; background: var(--surface-2); }
+.msg.err { border-color: var(--signal); color: #ff8f87; }
+.msg.ok { border-color: var(--ok); color: var(--ok); }
+
+/* ---- Login ---- */
+#login {
+  position: fixed; inset: 0; z-index: 3000; background: var(--bg);
+  display: flex; align-items: center; justify-content: center; padding: 24px; overflow: auto;
+}
+#login .stage { width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; gap: 22px; }
+#loginLogo { width: min(78vw, 380px); aspect-ratio: 840 / 770; }
+#loginLogo svg, .logo-host svg { display: block; width: 100%; height: 100%; overflow: visible; }
+#loginForm { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+#loginForm h1 { font-size: 15px; letter-spacing: .12em; text-align: center; color: var(--fg-muted); margin-bottom: 4px; }
+#loginForm .btn { width: 100%; margin-top: 4px; }
+
+/* ---- App-Shell ---- */
+#app { min-height: 100vh; display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); }
+.sidebar {
+  position: sticky; top: 0; height: 100vh; border-right: 1px solid var(--line); background: var(--surface);
+  display: flex; flex-direction: column; padding: 22px 14px 16px; z-index: 1300;
+}
+.sidebar .logo-host { width: 150px; aspect-ratio: 840 / 770; margin: 0 auto 8px; }
+.sidebar .brand-sub { text-align: center; margin-bottom: 22px; }
+.nav { display: flex; flex-direction: column; gap: 4px; }
+.nav-item {
+  position: relative; display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: var(--r-sm);
+  color: var(--fg-muted); text-decoration: none; font-weight: 800; font-style: italic; text-transform: uppercase;
+  letter-spacing: .04em; font-size: 14px; transition: color .15s, background .15s;
+}
+.nav-item svg { width: 20px; height: 20px; flex: none; }
+.nav-item:hover { color: var(--fg); background: var(--surface-2); }
+.nav-item.active { color: var(--fg); background: var(--surface-2); }
+.nav-item.active::before {
+  content: ""; position: absolute; left: 0; top: 9px; bottom: 9px; width: 3px; background: var(--fg); transform: skewX(-14deg);
+}
+.alarm-count {
+  margin-left: auto; position: relative; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px;
+  background: var(--signal); color: var(--on-fg); font-weight: 700; font-style: italic; font-size: 12px; line-height: 22px; text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.alarm-count::after, .pulse::after {
+  content: ""; position: absolute; inset: -2px; border-radius: inherit; border: 1.5px solid var(--signal);
+  animation: ring-pulse 1.8s cubic-bezier(.2,.6,.3,1) infinite; pointer-events: none;
+}
+@keyframes ring-pulse { 0% { transform: scale(.85); opacity: .9; } 100% { transform: scale(1.9); opacity: 0; } }
+.sidebar-foot { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); }
+.logout-btn {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 14px; background: none; border: 0; border-radius: var(--r-sm);
+  color: var(--fg-muted); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; text-align: left;
+}
+.logout-btn:hover { color: var(--fg); background: var(--surface-2); }
+.logout-btn svg { width: 18px; height: 18px; }
+
+.main { min-width: 0; display: flex; flex-direction: column; }
+.topbar {
+  position: sticky; top: 0; z-index: 1200; display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  padding: 12px 24px; background: rgba(5,6,5,.88); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.topbar .mobile-only { display: none; }
+.topbar .ev { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 200px; }
+.topbar h1 { font-size: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.phase { display: inline-flex; align-items: center; gap: 7px; }
+.phase .dot { width: 8px; height: 8px; }
+.phase.before .dot { background: var(--warn); }
+.phase.running .dot { background: var(--ok); animation: blink 2s ease-in-out infinite; }
+.phase.over .dot { background: var(--fg-faint); }
+@keyframes blink { 50% { opacity: .35; } }
+.clock { display: flex; align-items: center; gap: 12px; }
+.clock svg { width: 54px; height: 54px; flex: none; overflow: visible; }
+.clock .txt { display: flex; flex-direction: column; line-height: 1.15; }
+.clock .big { font-size: 22px; }
+.clock .sub { font-size: 12px; color: var(--fg-muted); font-variant-numeric: tabular-nums; }
+.top-actions { display: flex; align-items: center; gap: 12px; }
+.stand { font-size: 13px; color: var(--fg-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.stand.stale { color: var(--warn); }
+
+.content { padding: 22px 24px 40px; max-width: 1560px; width: 100%; margin: 0 auto; }
+.view-title { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.view-title h2 { font-size: 26px; }
+
+/* ---- Alarmleiste ---- */
+.alarmstrip { display: flex; flex-direction: column; gap: 8px; padding: 12px 24px 0; max-width: 1560px; width: 100%; margin: 0 auto; }
+.alarm {
+  position: relative; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 11px 14px; border: 1px solid var(--signal); border-left-width: 4px; border-radius: var(--r-sm);
+  background: rgba(255, 69, 58, .08);
+}
+.alarm.abort { border-color: var(--warn); background: rgba(255, 176, 32, .07); }
+.alarm .sig { position: relative; width: 30px; height: 30px; flex: none; display: grid; place-items: center; }
+.alarm .sig::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--signal); }
+.alarm.abort .sig::before { background: var(--warn); }
+.alarm .sig::after, .alarm .sig::before { grid-area: 1 / 1; }
+.alarm .sig::after {
+  content: ""; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--signal);
+  animation: ring-pulse 1.8s cubic-bezier(.2,.6,.3,1) infinite;
+}
+.alarm.abort .sig::after { display: none; }
+.alarm .meta { flex: 1 1 240px; min-width: 0; }
+.alarm .title { font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: .03em; font-size: 16px; }
+.alarm.sos .title { color: var(--signal); }
+.alarm.abort .title { color: var(--warn); }
+.alarm .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+/* ---- Live ---- */
+.kpis { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px 12px; position: relative; overflow: hidden; }
+.kpi .label { display: block; margin-bottom: 6px; min-height: 26px; }
+.kpi .val { font-size: 40px; line-height: 1; }
+.kpi.signal { border-color: var(--signal); } .kpi.signal .val { color: var(--signal); }
+.kpi.warn .val { color: var(--warn); }
+.kpi.ok .val { color: var(--ok); }
+.kpi.signal.pulse::after { inset: -1px; border-radius: var(--r-md); }
+.live-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: stretch; }
+.card.map-card, .card.teamlist-card { padding: 0; }
+.map-card { overflow: hidden; position: relative; isolation: isolate; min-height: 420px; }
+#map { position: absolute; inset: 0; background: #0a0b0a; }
+.map-tools {
+  position: absolute; top: 10px; right: 10px; z-index: 1000; display: flex; flex-wrap: wrap; gap: 6px;
+  justify-content: flex-end; align-items: center; max-width: calc(100% - 70px);
+  background: rgba(14,15,14,.88); border: 1px solid var(--line-strong); border-radius: var(--r-md); padding: 6px;
+}
+.map-tools [hidden] { display: none !important; }
+.map-tools select {
+  background: var(--surface-2); color: var(--fg); border: 1px solid var(--line-strong); border-radius: var(--r-sm);
+  min-height: 30px; padding: 3px 8px; font-size: 12px; max-width: 150px;
+}
+.map-tools select.on { border-color: var(--fg); }
+.map-chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 3px 4px 3px 10px;
+  border: 1px solid var(--fg); border-radius: 15px; font-size: 12px; font-weight: 700; color: var(--fg);
+}
+.map-chip button { background: transparent; border: 0; color: var(--fg); width: 22px; height: 22px; border-radius: 50%; font-size: 13px; line-height: 1; }
+.map-chip button:hover { background: var(--line-strong); }
+@media (max-width: 899px) { .map-tools { left: 56px; max-width: none; } }
+.map-wrap { position: relative; height: clamp(440px, calc(100vh - 330px), 780px); }
+.teamlist-card { display: flex; flex-direction: column; min-height: 0; height: clamp(440px, calc(100vh - 330px), 780px); }
+.teamlist-card .card-head { padding: 14px 16px 0; margin-bottom: 8px; }
+.teamlist { overflow-y: auto; padding: 0 8px 8px; flex: 1; }
+.tl-item {
+  display: grid; grid-template-columns: 14px 36px minmax(0, 1fr); gap: 2px 10px; align-items: start; width: 100%; text-align: left;
+  padding: 10px 10px; background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; color: var(--fg);
+}
+.tl-item:hover { background: var(--surface-2); }
+.tl-item .dot { margin-top: 6px; grid-row: 1; }
+.tl-item .avatar { grid-column: 2; grid-row: 1 / span 3; align-self: center; }
+.tl-item .nm, .tl-item .sub, .tl-item .badges { grid-column: 3; }
+.tl-item .nm { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; gap: 8px; align-items: baseline; }
+.tl-item .sub { font-size: 12px; color: var(--fg-muted); display: flex; gap: 12px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+.tl-item.sos { box-shadow: inset 3px 0 0 var(--signal); }
+.empty { padding: 28px 12px; text-align: center; color: var(--fg-muted); font-size: 13px; }
+
+/* Leaflet dunkel */
+.leaflet-tile-pane { filter: grayscale(1) invert(1) brightness(.9) contrast(.9); }
+.leaflet-container { background: #0a0b0a; font-family: var(--font); }
+.leaflet-container .leaflet-control-attribution { background: rgba(5,6,5,.78); color: var(--fg-muted); font-size: 11px; }
+.leaflet-container .leaflet-control-attribution a { color: var(--fg); }
+.leaflet-bar a, .leaflet-bar a:hover { background: var(--surface); color: var(--fg); border-bottom-color: var(--line); }
+.leaflet-bar a:hover { background: var(--surface-2); }
+.leaflet-bar { border: 1px solid var(--line-strong); box-shadow: none; }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--surface); color: var(--fg); border: 1px solid var(--line-strong); box-shadow: none; border-radius: var(--r-sm); }
+.leaflet-popup-content { margin: 10px 14px; font-family: var(--font); }
+.leaflet-container a.leaflet-popup-close-button { color: var(--fg-muted); }
+.mk { position: relative; width: 22px; height: 22px; }
+.mk i { position: absolute; inset: 5px; border-radius: 50%; background: var(--c, #fff); border: 2px solid var(--bg); box-shadow: 0 0 0 1.5px var(--c, #fff); }
+.mk.finished i { background: var(--bg); border-color: var(--c, #fff); box-shadow: none; }
+.mk.aborted i { border-radius: 2px; transform: rotate(45deg); }
+.mk.sos::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--signal); animation: ring-pulse 1.8s cubic-bezier(.2,.6,.3,1) infinite; }
+.mk.sos i { box-shadow: 0 0 0 2px var(--signal); }
+.pk { position: relative; width: 44px; height: 44px; }
+.pk-face {
+  position: absolute; inset: 0; border-radius: 50%; background: var(--surface-2) center / cover no-repeat; border: 3px solid var(--c, #fff);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .55); display: grid; place-items: center; color: var(--fg-muted); font-weight: 800; font-style: italic; font-size: 13px;
+}
+.pk.noimg { width: 30px; height: 30px; }
+.pk.noimg .pk-face { background: var(--c, #fff); color: var(--on-fg); border-color: var(--bg); box-shadow: 0 0 0 1.5px var(--c, #fff); font-size: 11px; }
+.pk.aborted .pk-face { filter: grayscale(.85); }
+.pk.finished .pk-face { border-style: double; border-width: 4px; }
+.pk-st {
+  position: absolute; right: -4px; bottom: -4px; width: 17px; height: 17px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 10px; font-weight: 800; line-height: 1; border: 2px solid var(--bg); color: var(--on-fg);
+}
+.pk-st.aborted { background: var(--warn); }
+.pk-st.finished { background: var(--fg); }
+.pk.noimg .pk-st { width: 14px; height: 14px; font-size: 8px; right: -5px; bottom: -5px; }
+.pk.sos::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--signal); animation: ring-pulse 1.8s cubic-bezier(.2,.6,.3,1) infinite; pointer-events: none; }
+.pk.sos .pk-face { border-color: var(--signal); }
+.mk-start { width: 28px; height: 28px; border-radius: 50%; background: var(--bg); border: 2px solid var(--fg); color: var(--fg); display: grid; place-items: center; font-weight: 800; font-style: italic; font-size: 13px; }
+
+/* ---- Teams ---- */
+.create-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: end; max-width: 640px; }
+.newteam { margin-top: 16px; padding: 16px 18px; border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface-2); display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.newteam .code { font-weight: 800; font-style: italic; font-size: clamp(38px, 7vw, 64px); letter-spacing: .1em; line-height: 1; font-variant-numeric: tabular-nums; }
+.newteam .info { flex: 1 1 200px; }
+.filterbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+.searchbox { flex: 1 1 240px; max-width: 360px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip {
+  background: transparent; border: 1px solid var(--line-strong); color: var(--fg-muted); padding: 5px 14px; border-radius: 99px;
+  font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+}
+.chip:hover { color: var(--fg); border-color: var(--fg-faint); }
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--on-fg); border-color: var(--fg); }
+.chip .n { font-variant-numeric: tabular-nums; opacity: .7; margin-left: 4px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 11px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .12em; color: var(--fg-muted); white-space: nowrap; }
+tbody tr.teamrow { cursor: pointer; transition: background .12s; }
+tbody tr.teamrow:hover { background: var(--surface-2); }
+td.code { font-weight: 700; font-style: italic; letter-spacing: .08em; font-variant-numeric: tabular-nums; }
+td.name { font-weight: 700; }
+.row-actions { display: flex; gap: 8px; flex-wrap: nowrap; }
+
+/* Drawer */
+.drawer { position: fixed; inset: 0; z-index: 2500; }
+.drawer .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.6); }
+.drawer .panel {
+  position: absolute; top: 0; right: 0; bottom: 0; width: min(440px, 100%); background: var(--surface); border-left: 1px solid var(--line-strong);
+  padding: 20px 20px 28px; overflow-y: auto;
+}
+.drawer .dhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+.drawer h2 { font-size: 24px; word-break: break-word; }
+.dgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; margin: 18px 0; }
+.dgrid .v { font-size: 15px; margin-top: 2px; }
+.dsection { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 16px; }
+.dsection h3 { font-size: 14px; margin-bottom: 10px; }
+.plist { list-style: none; margin: 0; padding: 0; }
+.plist li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.plist .pn { font-weight: 600; }
+
+/* ---- Rangliste ---- */
+.rank-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+.podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: end; margin: 22px 0 22px; max-width: 760px; }
+.pod { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); padding: 14px 16px; display: flex; flex-direction: column; justify-content: flex-end; position: relative; overflow: hidden; }
+.pod.p1 { min-height: 200px; border-color: var(--fg); }
+.pod.p2 { min-height: 160px; }
+.pod.p3 { min-height: 130px; }
+.pod .rk { font-size: 64px; line-height: .9; color: var(--fg-faint); margin-bottom: 10px; }
+.pod.p1 .rk { color: var(--fg); font-size: 84px; }
+.pod .tn { font-weight: 800; font-style: italic; text-transform: uppercase; font-size: 18px; letter-spacing: .02em; overflow-wrap: break-word; }
+.pod .km { color: var(--fg-muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+.pod .tickrow { position: absolute; top: 12px; right: 14px; }
+.ranking td:first-child { width: 64px; }
+.ranking td.rk { font-weight: 700; font-style: italic; font-size: 18px; }
+
+/* ---- Einstellungen ---- */
+.settings-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 340px); gap: 16px; align-items: start; }
+fieldset { border: 1px solid var(--line); border-radius: var(--r-md); padding: 6px 18px 18px; margin: 0 0 16px; background: var(--surface); min-width: 0; }
+legend { padding: 0 8px; font-weight: 800; font-style: italic; text-transform: uppercase; letter-spacing: .04em; font-size: 15px; }
+.fgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-top: 8px; }
+.save-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.save-bar .msg { margin: 0; }
+#startMap { height: 280px; border-radius: var(--r-sm); border: 1px solid var(--line); }
+
+/* ---- Dialog ---- */
+dialog { background: var(--surface); color: var(--fg); border: 1px solid var(--line-strong); border-radius: var(--r-md); padding: 0; max-width: 860px; width: 94%; }
+dialog::backdrop { background: rgba(0,0,0,.72); }
+.dlg-body { padding: 20px; max-height: 84vh; overflow: auto; }
+.dlg-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.dlg-head h2 { font-size: 20px; }
+.strip { display: flex; gap: 12px; overflow-x: auto; padding: 4px 0 10px; }
+.checkin { flex: 0 0 auto; width: 240px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px; }
+.checkin img, .checkin video { display: block; width: 100%; border-radius: 3px; background: #000; min-height: 120px; }
+.checkin .cap { font-size: 12px; color: var(--fg-muted); margin-top: 7px; }
+.checkin .cap b { color: var(--fg); font-style: italic; font-weight: 700; }
+
+/* ---- Toasts ---- */
+#toasts { position: fixed; right: 18px; bottom: 18px; z-index: 3500; display: flex; flex-direction: column; gap: 8px; max-width: min(380px, calc(100vw - 36px)); }
+.toast { background: var(--surface-2); border: 1px solid var(--line-strong); border-left: 3px solid var(--signal); padding: 10px 14px; border-radius: var(--r-sm); font-size: 13px; }
+
+/* ---- Tabbar (mobil) ---- */
+.tabbar { display: none; }
+
+@media (max-width: 1280px) {
+  .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .settings-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 1100px) {
+  .live-grid { grid-template-columns: minmax(0, 1fr); }
+  .teamlist-card { height: auto; max-height: 460px; }
+  .map-wrap { height: 56vh; min-height: 360px; }
+}
+@media (max-width: 899px) {
+  #app { display: block; padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); }
+  .sidebar { display: none; }
+  .topbar { padding: 8px 14px; gap: 10px; flex-wrap: nowrap; }
+  .topbar .mobile-only { display: flex; }
+  .topbar .logo-host { width: 42px; aspect-ratio: 840 / 770; flex: none; }
+  .topbar h1 { font-size: 15px; }
+  .topbar .ev { flex: 1 1 0; }
+  .clock .txt { display: none; }
+  .clock.show-txt .txt { display: flex; }
+  .clock svg { width: 40px; height: 40px; }
+  .top-actions { gap: 8px; }
+  .stand { display: none; }
+  .icon-btn { width: 36px; height: 36px; }
+  .content { padding: 16px 14px 28px; }
+  .alarmstrip { padding: 10px 14px 0; }
+  .view-title h2 { font-size: 22px; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .kpi .val { font-size: 34px; }
+  .card { padding: 14px; }
+  .hide-sm { display: none; }
+  /* Teamtabelle als Karten */
+  #view-teams table, #view-teams tbody { display: block; }
+  #view-teams thead { display: none; }
+  #view-teams tr.teamrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 14px 2px; border-bottom: 1px solid var(--line); }
+  #view-teams tr.teamrow td { display: block; border: 0; padding: 0; }
+  #view-teams td.name { font-size: 16px; }
+  #view-teams td.c-status { text-align: right; }
+  #view-teams td.c-ago, #view-teams td.c-batt { color: var(--fg-muted); font-size: 13px; }
+  #view-teams td.c-batt { text-align: right; }
+  #view-teams tr.teamrow td.hide-sm { display: none; }
+  #view-teams td.c-hints:has(> .muted) { display: none; }
+  #view-teams td.c-hints { grid-column: 1 / -1; }
+  #view-teams td.c-hints:empty { display: none; }
+  #view-teams td.c-act { grid-column: 1 / -1; }
+  .create-grid { grid-template-columns: minmax(0, 1fr); }
+  .podium { gap: 8px; }
+  .pod { padding: 10px; }
+  .pod .rk { font-size: 44px; } .pod.p1 .rk { font-size: 58px; }
+  .pod .tn { font-size: 12px; overflow-wrap: break-word; hyphens: auto; }
+  .tabbar {
+    display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 1300;
+    height: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom);
+    background: rgba(13,14,13,.96); border-top: 1px solid var(--line-strong);
+  }
+  .tabbar .nav-item { flex-direction: column; justify-content: center; gap: 3px; padding: 6px 2px; font-size: 11px; border-radius: 0; }
+  .tabbar .nav-item.active { background: none; }
+  .tabbar .nav-item.active::before { left: 28%; right: 28%; top: 0; bottom: auto; width: auto; height: 3px; transform: skewX(-30deg); }
+  .tabbar .alarm-count { position: absolute; top: 4px; left: calc(50% + 6px); margin: 0; min-width: 18px; height: 18px; line-height: 18px; font-size: 11px; }
+  #toasts { bottom: calc(var(--tabbar-h) + 14px + env(safe-area-inset-bottom)); right: 12px; }
+}
+@media (max-width: 520px) {
+  .alarm .actions .btn { flex: 1 1 auto; }
+}
+
+/* ---- Reduzierte Bewegung ---- */
+@media (prefers-reduced-motion: reduce) {
+  .alarm-count::after, .pulse::after, .alarm .sig::after, .mk.sos::after, .pk.sos::after, .phase.running .dot { animation: none; }
+  .alarm .sig::after, .mk.sos::after { opacity: .6; }
+  .icon-btn.busy svg { animation: none; }
+}
 </style>
 </head>
 <body>
 
-<div id="login" class="card">
-  <h2>Orga-Login</h2>
-  <form id="loginForm">
-    <input type="password" id="loginPassword" placeholder="Orga-Passwort" autocomplete="current-password" required>
-    <div id="loginMsg"></div>
-    <button class="btn" type="submit" style="width:100%;margin-top:10px;">Anmelden</button>
-  </form>
+<!-- ======================= LOGIN ======================= -->
+<div id="login">
+  <div class="stage" id="loginStage">
+    <div id="loginLogo" class="logo-host"></div>
+    <form id="loginForm">
+      <h1>Orga-Login</h1>
+      <label class="field">
+        <span class="label">Passwort</span>
+        <input type="password" id="loginPassword" placeholder="Orga-Passwort" autocomplete="current-password" required>
+      </label>
+      <div id="loginMsg"></div>
+      <button class="btn" type="submit">Anmelden</button>
+    </form>
+  </div>
 </div>
 
+<!-- ======================= APP ======================= -->
 <div id="app" class="hidden">
-  <header>
-    <h1 id="eventName">Orga Dashboard</h1>
-    <span class="stand" id="stand"></span>
-    <button id="logoutBtn" type="button">Abmelden</button>
-  </header>
-  <main>
-    <section class="card" id="alarmsCard">
-      <h2>Alarme</h2>
-      <div id="alarmsList"><span class="muted">Keine offenen Alarme.</span></div>
-    </section>
+  <aside class="sidebar" id="sidebar">
+    <div class="logo-host" id="sideLogo"></div>
+    <div class="brand-sub label rise-nav">Orga-Dashboard</div>
+    <nav class="nav" aria-label="Hauptnavigation">
+      <a class="nav-item rise-nav" href="#live" data-route="live">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/><path d="M12 3v2.5M21 12h-2.5M12 21v-2.5M3 12h2.5"/></svg>
+        <span>Live</span><b class="alarm-count js-alarm-badge hidden">0</b>
+      </a>
+      <a class="nav-item rise-nav" href="#teams" data-route="teams">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.7a3.5 3.5 0 0 1 0 6.6M18.5 14.5c2 .8 3.2 2.7 3.2 5.5"/></svg>
+        <span>Teams</span>
+      </a>
+      <a class="nav-item rise-nav" href="#ranking" data-route="ranking">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 21V13h5.5v8M9.5 21V4h5v17M15.5 21v-11H21v11M2 21h20"/></svg>
+        <span>Rangliste</span>
+      </a>
+      <a class="nav-item rise-nav" href="#settings" data-route="settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+        <span>Einstellungen</span>
+      </a>
+    </nav>
+    <div class="sidebar-foot rise-nav">
+      <button type="button" class="logout-btn js-logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4M16 8l4 4-4 4M20 12H9"/></svg>
+        Abmelden
+      </button>
+    </div>
+  </aside>
 
-    <section class="card">
-      <h2>Karte</h2>
-      <div id="map"></div>
-    </section>
-
-    <section class="card">
-      <h2>Teams</h2>
-      <div class="form-grid" style="grid-template-columns:1fr auto;align-items:end;gap:8px;margin-bottom:12px;">
-        <label>Team-Name <input type="text" id="newTeamName" maxlength="60"></label>
-        <button class="btn" type="button" id="createTeamBtn">Team anlegen</button>
+  <div class="main">
+    <header class="topbar" id="topbar">
+      <div class="logo-host mobile-only" id="topLogo"></div>
+      <div class="ev">
+        <h1 id="eventName">SBS24</h1>
+        <div class="phase over" id="phase"><span class="dot"></span><span class="label" id="phaseText">–</span></div>
       </div>
-      <div id="createTeamMsg"></div>
-      <div id="newTeamBox"></div>
-      <table>
-        <thead><tr>
-          <th>Name</th><th>Code</th><th>Status</th><th>Letzter Punkt</th><th>Batterie</th><th>Letzter Check-in</th><th>Hinweise</th><th>Aktionen</th>
-        </tr></thead>
-        <tbody id="teamsBody"></tbody>
-      </table>
-    </section>
-
-    <section class="card">
-      <h2>Rangliste</h2>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-        <button class="btn secondary" type="button" id="rankCalcBtn">Rangliste aktualisieren</button>
-        <button class="btn" type="button" id="rankFinalBtn">Endwertung berechnen</button>
+      <div class="clock" id="clock" title="Eventfortschritt">
+        <svg viewBox="0 0 60 60" aria-hidden="true">
+          <g id="clockTicks"></g>
+          <circle cx="30" cy="30" r="22" fill="none" stroke="var(--line-strong)" stroke-width="2.5"/>
+          <circle id="clockArc" cx="30" cy="30" r="22" fill="none" stroke="var(--fg)" stroke-width="3.5" stroke-linecap="butt" transform="rotate(-90 30 30)"/>
+          <line id="clockHand" x1="30" y1="30" x2="30" y2="13" stroke="var(--fg)" stroke-width="1.6" stroke-linecap="round"/>
+          <circle cx="30" cy="30" r="2.4" fill="var(--fg)"/>
+        </svg>
+        <div class="txt">
+          <span class="label" id="clockLabel">Restzeit</span>
+          <span class="big num" id="clockBig">--:--:--</span>
+          <span class="sub" id="clockSub"></span>
+        </div>
       </div>
-      <div id="rankMsg"></div>
-      <div id="rankBox"><span class="muted">Noch keine Rangliste berechnet.</span></div>
-    </section>
+      <div class="top-actions">
+        <span class="stand" id="stand">Stand: –</span>
+        <button class="icon-btn" type="button" id="refreshBtn" title="Jetzt aktualisieren" aria-label="Jetzt aktualisieren">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.5L4 8.5M4 4v4.5h4.5M4 13a8 8 0 0 0 14.3 4.5l1.7-2M20 20v-4.5h-4.5"/></svg>
+        </button>
+        <button class="icon-btn mobile-only js-logout" type="button" title="Abmelden" aria-label="Abmelden">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4M16 8l4 4-4 4M20 12H9"/></svg>
+        </button>
+      </div>
+    </header>
 
-    <section class="card">
-      <h2>Event-Einstellungen</h2>
-      <form id="eventForm" class="form-grid">
-        <label>Name <input name="name" type="text"><span class="field-err" data-err-for="name"></span></label>
-        <label>Start-Breitengrad <input name="start_lat" type="number" step="any"><span class="field-err" data-err-for="start_lat"></span></label>
-        <label>Start-Längengrad <input name="start_lng" type="number" step="any"><span class="field-err" data-err-for="start_lng"></span></label>
-        <label>Aufdeckungszeit <input name="reveal_time" type="datetime-local"><span class="field-err" data-err-for="reveal_time"></span></label>
-        <label>Startzeit <input name="start_time" type="datetime-local"><span class="field-err" data-err-for="start_time"></span></label>
-        <label>Dauer (h) <input name="duration_h" type="number" step="1"><span class="field-err" data-err-for="duration_h"></span></label>
-        <label>Endzeit <input name="end_time_display" type="text" readonly></label>
-        <label>Check-in-Intervall (min) <input name="checkin_interval_min" type="number" step="1"><span class="field-err" data-err-for="checkin_interval_min"></span></label>
-        <label>Check-in-Fenster (min) <input name="checkin_window_min" type="number" step="1"><span class="field-err" data-err-for="checkin_window_min"></span></label>
-        <label>Stummalarm (min) <input name="silence_alarm_min" type="number" step="1"><span class="field-err" data-err-for="silence_alarm_min"></span></label>
-        <label>Tempo-Schwellwert (km/h) <input name="speed_flag_kmh" type="number" step="any"><span class="field-err" data-err-for="speed_flag_kmh"></span></label>
-        <label>Orga-Telefon <input name="orga_phone" type="text"><span class="field-err" data-err-for="orga_phone"></span></label>
-      </form>
-      <div id="eventMsg"></div>
-      <button class="btn" type="button" id="saveEventBtn" style="margin-top:10px;">Speichern</button>
-    </section>
-  </main>
+    <div class="alarmstrip hidden" id="alarmStrip" role="alert" aria-live="assertive"></div>
+
+    <main class="content">
+
+      <!-- ============ LIVE ============ -->
+      <section id="view-live" class="view hidden" data-view="live">
+        <div class="view-title rise"><h2>Lagezentrale</h2><span class="ticks"><i></i><i></i><i></i></span></div>
+        <div class="kpis" id="kpis">
+          <div class="kpi ok rise" id="kpiActive"><span class="label">Teams aktiv</span><span class="val num">0</span></div>
+          <div class="kpi warn rise" id="kpiAborted"><span class="label">Abgebrochen</span><span class="val num">0</span></div>
+          <div class="kpi rise" id="kpiFinished"><span class="label">Im Ziel</span><span class="val num">0</span></div>
+          <div class="kpi rise" id="kpiAlarms"><span class="label">Offene Alarme</span><span class="val num">0</span></div>
+          <div class="kpi rise" id="kpiHints"><span class="label">Teams mit Hinweisen</span><span class="val num">0</span></div>
+          <div class="kpi rise" id="kpiOverdue"><span class="label">Check-in überfällig</span><span class="val num">0</span></div>
+          <div class="kpi rise" id="kpiNoPhoto"><span class="label">Teamfoto fehlt</span><span class="val num">0</span></div>
+        </div>
+        <div class="live-grid">
+          <div class="card map-card rise"><div class="map-wrap"><div id="map"></div>
+            <div class="map-tools" id="mapTools" role="toolbar" aria-label="Karten-Fokus">
+              <button class="btn small" type="button" id="mfAll">Alle Teams</button>
+              <button class="btn secondary small" type="button" id="mfStart">Startpunkt</button>
+              <select id="mfTeam" aria-label="Team folgen"></select>
+              <span class="map-chip" id="mfChip" hidden><span id="mfChipText"></span><button type="button" id="mfChipX" aria-label="Folgen beenden">✕</button></span>
+              <button class="btn small" type="button" id="mfResume" hidden>Auto-Fokus</button>
+            </div></div></div>
+          <div class="card teamlist-card rise">
+            <div class="card-head"><h2>Teams</h2><span class="label" id="teamListCount"></span></div>
+            <div class="teamlist" id="teamList"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ TEAMS ============ -->
+      <section id="view-teams" class="view hidden" data-view="teams">
+        <div class="view-title rise"><h2>Teams</h2><span class="ticks"><i></i><i></i><i></i></span></div>
+        <div class="card rise" style="margin-bottom:16px;">
+          <div class="card-head"><h2>Team anlegen</h2></div>
+          <div class="create-grid">
+            <label class="field"><span class="label">Team-Name</span><input type="text" id="newTeamName" maxlength="60" autocomplete="off"></label>
+            <button class="btn" type="button" id="createTeamBtn">Team anlegen</button>
+          </div>
+          <div id="createTeamMsg"></div>
+          <div id="newTeamBox"></div>
+        </div>
+        <div class="card rise">
+          <div class="filterbar">
+            <label class="searchbox"><span class="hidden">Teams suchen</span><input type="search" id="teamSearch" placeholder="Team oder Code suchen …" autocomplete="off"></label>
+            <div class="chips" id="teamChips" role="group" aria-label="Statusfilter"></div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Name</th><th class="hide-sm">Code</th><th>Status</th><th>Letzter Punkt</th><th>Batterie</th><th class="hide-sm">Letzter Check-in</th><th>Hinweise</th><th>Aktionen</th>
+              </tr></thead>
+              <tbody id="teamsBody"></tbody>
+            </table>
+          </div>
+          <div class="empty hidden" id="teamsEmpty">Keine Teams gefunden.</div>
+        </div>
+      </section>
+
+      <!-- ============ RANKING ============ -->
+      <section id="view-ranking" class="view hidden" data-view="ranking">
+        <div class="view-title rise"><h2>Rangliste</h2><span class="ticks"><i></i><i></i><i></i></span></div>
+        <div class="card rise">
+          <div class="rank-actions">
+            <button class="btn secondary" type="button" id="rankCalcBtn">Rangliste aktualisieren</button>
+            <button class="btn" type="button" id="rankFinalBtn">Endwertung berechnen</button>
+          </div>
+          <div id="rankMsg"></div>
+        </div>
+        <div id="rankBox" style="margin-top:16px;"><span class="muted">Noch keine Rangliste berechnet.</span></div>
+      </section>
+
+      <!-- ============ SETTINGS ============ -->
+      <section id="view-settings" class="view hidden" data-view="settings">
+        <div class="view-title rise"><h2>Event-Einstellungen</h2><span class="ticks"><i></i><i></i><i></i></span></div>
+        <div class="settings-grid">
+          <form id="eventForm" novalidate>
+            <fieldset class="rise">
+              <legend>Allgemein</legend>
+              <div class="fgrid">
+                <label class="field"><span class="label">Name</span><input name="name" type="text"><span class="field-err" data-err-for="name"></span></label>
+                <label class="field"><span class="label">Orga-Telefon</span><input name="orga_phone" type="text"><span class="field-err" data-err-for="orga_phone"></span></label>
+              </div>
+            </fieldset>
+            <fieldset class="rise">
+              <legend>Start &amp; Zeit</legend>
+              <p class="muted tz-note">Alle Zeiten in deutscher Zeit (Europe/Berlin), unabhängig von der Zeitzone dieses Geräts.</p>
+              <div class="fgrid">
+                <label class="field"><span class="label">Start-Breitengrad</span><input name="start_lat" type="number" step="any"><span class="field-err" data-err-for="start_lat"></span></label>
+                <label class="field"><span class="label">Start-Längengrad</span><input name="start_lng" type="number" step="any"><span class="field-err" data-err-for="start_lng"></span></label>
+                <label class="field"><span class="label">Aufdeckungszeit <span class="tz-tag">MEZ</span></span><input name="reveal_time" type="datetime-local"><span class="field-err" data-err-for="reveal_time"></span></label>
+                <label class="field"><span class="label">Startzeit <span class="tz-tag">MEZ</span></span><input name="start_time" type="datetime-local"><span class="field-err" data-err-for="start_time"></span></label>
+                <label class="field"><span class="label">Dauer (h)</span><input name="duration_h" type="number" step="1"><span class="field-err" data-err-for="duration_h"></span></label>
+                <label class="field"><span class="label">Endzeit <span class="tz-tag">MEZ</span></span><input name="end_time_display" type="text" readonly></label>
+              </div>
+            </fieldset>
+            <fieldset class="rise">
+              <legend>Check-ins &amp; Alarme</legend>
+              <div class="fgrid">
+                <label class="field"><span class="label">Check-in-Intervall (min)</span><input name="checkin_interval_min" type="number" step="1"><span class="field-err" data-err-for="checkin_interval_min"></span></label>
+                <label class="field"><span class="label">Check-in-Fenster (min)</span><input name="checkin_window_min" type="number" step="1"><span class="field-err" data-err-for="checkin_window_min"></span></label>
+                <label class="field"><span class="label">Stummalarm (min)</span><input name="silence_alarm_min" type="number" step="1"><span class="field-err" data-err-for="silence_alarm_min"></span></label>
+                <label class="field"><span class="label">Tempo-Schwellwert (km/h)</span><input name="speed_flag_kmh" type="number" step="any"><span class="field-err" data-err-for="speed_flag_kmh"></span></label>
+              </div>
+            </fieldset>
+            <div class="save-bar rise">
+              <button class="btn" type="button" id="saveEventBtn">Speichern</button>
+              <div id="eventMsg"></div>
+            </div>
+          </form>
+          <div class="card rise">
+            <div class="card-head"><h2>Startpunkt</h2></div>
+            <div id="startMap"></div>
+            <p class="muted" style="margin:10px 0 0;">Vorschau der eingetragenen Koordinaten.</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <nav class="tabbar" aria-label="Hauptnavigation mobil" id="tabbar">
+    <a class="nav-item" href="#live" data-route="live">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/><path d="M12 3v2.5M21 12h-2.5M12 21v-2.5M3 12h2.5"/></svg>
+      <span>Live</span><b class="alarm-count js-alarm-badge hidden">0</b>
+    </a>
+    <a class="nav-item" href="#teams" data-route="teams">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.7a3.5 3.5 0 0 1 0 6.6M18.5 14.5c2 .8 3.2 2.7 3.2 5.5"/></svg>
+      <span>Teams</span>
+    </a>
+    <a class="nav-item" href="#ranking" data-route="ranking">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 21V13h5.5v8M9.5 21V4h5v17M15.5 21v-11H21v11M2 21h20"/></svg>
+      <span>Rangliste</span>
+    </a>
+    <a class="nav-item" href="#settings" data-route="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+      <span>Einstellungen</span>
+    </a>
+  </nav>
 </div>
 
+<!-- Team-Details (Drawer) -->
+<div class="drawer hidden" id="drawer">
+  <div class="scrim" id="drawerScrim"></div>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+    <div class="dhead">
+      <h2 id="drawerTitle">Team</h2>
+      <button class="icon-btn" type="button" id="drawerClose" aria-label="Schließen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div id="drawerBody"></div>
+  </div>
+</div>
+
+<!-- Check-ins -->
 <dialog id="checkinDlg">
   <div class="dlg-body">
-    <h2 id="checkinTitle">Check-ins</h2>
+    <div class="dlg-head">
+      <h2 id="checkinTitle">Check-ins</h2>
+      <button class="btn secondary small" type="button" id="checkinClose">Schließen</button>
+    </div>
     <div id="checkinContent"><span class="muted">Lade …</span></div>
-    <div style="margin-top:12px;text-align:right;"><button class="btn secondary" type="button" id="checkinClose">Schließen</button></div>
   </div>
 </dialog>
+
+<div id="toasts" aria-live="polite"></div>
 
 <script>
 "use strict";
 
-/* ---------- helpers ---------- */
+/* =====================================================================
+   1. HELPERS
+   ===================================================================== */
 
-function esc(s) {
-  return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
-    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
-  });
-}
+// Alle Nutzerdaten (Team-/Teilnehmernamen …) nur über textContent – kein innerHTML.
 function el(tag, cls, text) {
   var e = document.createElement(tag);
   if (cls) e.className = cls;
   if (text != null) e.textContent = text;
   return e;
 }
-function fmtTime(iso) {
-  if (!iso) return "–";
+function $(id) { return document.getElementById(id); }
+// Alle Zeiten in deutscher Zeit, unabhängig von der Zeitzone des Browsers.
+const TZ = "Europe/Berlin";
+function parseDate(iso) {
+  if (!iso) return null;
   var d = new Date(iso);
-  if (isNaN(d.getTime())) return "–";
-  return d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+  return isNaN(d.getTime()) ? null : d;
+}
+function fmtTime(iso) {
+  var d = parseDate(iso);
+  if (!d) return "–";
+  return d.toLocaleTimeString("de-DE", { timeZone: TZ, hour: "2-digit", minute: "2-digit" });
+}
+function fmtTimeSec(iso) {
+  var d = parseDate(iso);
+  if (!d) return "–";
+  return d.toLocaleTimeString("de-DE", { timeZone: TZ, hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 function fmtDateTime(iso) {
-  if (!iso) return "–";
-  var d = new Date(iso);
-  if (isNaN(d.getTime())) return "–";
-  return d.toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  var d = parseDate(iso);
+  if (!d) return "–";
+  return d.toLocaleString("de-DE", { timeZone: TZ, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+function fmtDateTimeLong(ms) {
+  return new Date(ms).toLocaleString("de-DE", { timeZone: TZ, weekday: "short", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+// "MEZ" / "MESZ" für den gegebenen Zeitpunkt
+function tzAbbr(ms) {
+  try {
+    var parts = new Intl.DateTimeFormat("de-DE", { timeZone: TZ, timeZoneName: "short" }).formatToParts(new Date(ms == null ? Date.now() : ms));
+    for (var k = 0; k < parts.length; k++) if (parts[k].type === "timeZoneName") return parts[k].value;
+  } catch (e) { /* */ }
+  return "MEZ";
 }
 function minutesAgo(minutes) {
   if (minutes == null) return "–";
   return "vor " + Math.round(minutes) + " min";
 }
+function pad2(n) { return String(n).length < 2 ? "0" + n : String(n); }
+function hms(ms) {
+  var s = Math.max(0, Math.floor(ms / 1000));
+  return pad2(Math.floor(s / 3600)) + ":" + pad2(Math.floor((s % 3600) / 60)) + ":" + pad2(s % 60);
+}
+function clamp(v, a, b) { return Math.min(b, Math.max(a, v)); }
+function reducedMotion() {
+  return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+}
+// Statisches SVG-Markup (keine Nutzerdaten) per DOMParser – kein innerHTML.
+function svgFromString(str) {
+  var doc = new DOMParser().parseFromString(str, "image/svg+xml");
+  return document.importNode(doc.documentElement, true);
+}
+function cubicBezier(x1, y1, x2, y2) {
+  return function (t) {
+    if (t <= 0) return 0;
+    if (t >= 1) return 1;
+    var lo = 0, hi = 1, u = t;
+    for (var i = 0; i < 28; i++) {
+      u = (lo + hi) / 2;
+      var x = 3 * (1 - u) * (1 - u) * u * x1 + 3 * (1 - u) * u * u * x2 + u * u * u;
+      if (x < t) lo = u; else hi = u;
+    }
+    return 3 * (1 - u) * (1 - u) * u * y1 + 3 * (1 - u) * u * u * y2 + u * u * u;
+  };
+}
+var EASE_SWEEP = cubicBezier(.6, 0, .2, 1);
 
-var token = sessionStorage.getItem("orgaToken") || null;
+/* =====================================================================
+   2. STATE
+   ===================================================================== */
+
+var TITLE = "SBS24 Orga";
+var ROUTES = ["live", "teams", "ranking", "settings"];
+var token = null;
+try { token = sessionStorage.getItem("orgaToken") || null; } catch (e) { token = null; }
 var pollTimer = null;
-var knownAlertIds = {};   // id -> true (already seen unresolved)
-var knownAlertsSeeded = false; // erste Aktualisierung: Bestandsalarme still übernehmen
+var clockTimer = null;
 var titleBlinkTimer = null;
-var trackCache = {};      // teamId -> {points: [...], layer: polyline}
-var markers = {};         // teamId -> marker
-var map = null;
-var startMarker = null;
+var knownAlertIds = {};          // id -> true (bereits gesehen)
+var knownAlertsSeeded = false;   // erste Aktualisierung: Bestandsalarme still übernehmen
+var renderedAlertIds = {};       // id -> true (in der Leiste gerendert, für Einfahr-Animation)
+var state = {
+  event: null, teams: [], alerts: [], skew: 0,
+  lastRefresh: null, teamFilter: "all", teamQuery: "", drawerTeamId: null,
+  pendingPan: null, mapFitted: false, introPlayed: false
+};
+var trackCache = {};             // teamId -> {points, layer}
+var markers = {};                // teamId -> L.marker
+var map = null, startMarker = null;
+var startMap = null, startMapMarker = null;
 var teamColorIdx = {};
-var TEAM_COLORS = ["#0b5cd5", "#0a7d34", "#d92d20", "#5941f2", "#f79009", "#0aa2a2", "#c026d3", "#84cc16", "#e11d48", "#7c3aed"];
+// Für dunkle Karte aufgehellte Palette (Farbe nur zur Unterscheidung der Spuren)
+var TEAM_COLORS = ["#5BC8FF", "#FF7AB6", "#C3F25B", "#FFB86B", "#9D8CFF", "#4FE3C1", "#FF8A7A", "#E6D95B", "#7FB0FF", "#E48CFF"];
 function colorForTeam(id) {
   if (!(id in teamColorIdx)) teamColorIdx[id] = Object.keys(teamColorIdx).length % TEAM_COLORS.length;
   return TEAM_COLORS[teamColorIdx[id]];
 }
+function nowMs() { return Date.now() + state.skew; }
 
-/* ---------- api ---------- */
+/* =====================================================================
+   3. API
+   ===================================================================== */
 
 function api(path, opts) {
   opts = opts || {};
@@ -230,16 +893,183 @@ function api(path, opts) {
   });
 }
 
-/* ---------- login ---------- */
+function toast(text, key) {
+  var box = $("toasts");
+  if (key) {
+    var old = box.querySelector('[data-key="' + key + '"]');
+    if (old) old.remove();
+  }
+  var t = el("div", "toast", text);
+  if (key) t.setAttribute("data-key", key);
+  box.appendChild(t);
+  if (!reducedMotion()) slideIn(t, 0);
+  setTimeout(function () { if (t.parentNode) t.remove(); }, 5000);
+}
 
-document.getElementById("loginForm").addEventListener("submit", function (ev) {
+/* =====================================================================
+   4. ANIMATIONEN  (Logo-Intro, Einfahren, Ring-Puls)
+   ===================================================================== */
+
+var PIV = { x: 441, y: 386 };
+var BEZEL_R = 372;
+// Pfaddaten aus assets/logo.svg (Gruppen arc, ticks, sbs, num)
+var LOGO_INNER = `<g id="arc"><path d="M118.8 237.4C118.5 237.1 118.9 236.1 120.9 232.2C122.2 229.5 123.4 227.3 123.5 227.1C123.6 227.0 124.4 225.4 125.4 223.6C126.3 221.8 127.3 220.1 127.5 219.8C127.7 219.4 129.1 217.0 130.6 214.5C132.0 211.9 133.6 209.3 134.0 208.6C134.5 207.8 135.5 206.2 136.3 204.9C144.9 191.3 152.3 181.0 163.3 167.2C164.3 166.0 169.7 159.8 172.7 156.2C174.7 154.0 176.6 151.8 177.0 151.4C180.8 146.9 193.2 134.1 197.0 130.6C197.8 129.9 199.8 128.1 201.5 126.5C203.2 124.9 205.5 122.8 206.6 121.9C207.7 120.9 209.4 119.3 210.5 118.4C211.5 117.4 214.1 115.3 216.1 113.7C218.2 112.1 220.4 110.3 221.1 109.7C225.0 106.3 239.2 95.8 244.8 92.1C245.9 91.3 248.2 89.8 249.9 88.7C257.5 83.6 260.1 81.9 263.9 79.6C264.7 79.1 266.1 78.3 267.0 77.7C267.9 77.1 269.1 76.4 269.6 76.1C270.2 75.8 272.4 74.5 274.6 73.3C276.7 72.0 279.9 70.3 281.7 69.4C283.4 68.4 285.0 67.6 285.1 67.5C285.3 67.4 286.2 66.9 287.1 66.4C288.1 65.9 289.7 65.0 290.6 64.5C291.6 63.9 293.3 63.0 294.5 62.5C295.7 61.9 298.8 60.4 301.4 59.1C305.9 56.9 308.3 55.8 310.7 54.7C311.3 54.5 312.2 54.0 312.8 53.8C313.4 53.5 314.6 53.0 315.4 52.6C316.2 52.3 317.4 51.7 318.0 51.5C318.6 51.2 319.5 50.8 319.9 50.6C321.8 49.7 325.6 48.1 327.4 47.5C328.5 47.1 329.6 46.6 329.9 46.5C330.8 46.1 334.8 44.5 337.2 43.6C338.6 43.1 340.4 42.4 341.2 42.1C342.1 41.7 343.3 41.3 343.9 41.1C344.4 40.9 345.2 40.6 345.6 40.4C346.0 40.2 346.5 40.0 346.7 40.0C346.9 40.0 347.4 39.8 347.8 39.7C348.7 39.3 350.3 38.7 352.2 38.1C352.9 37.9 354.3 37.4 355.5 37.0C359.0 35.8 369.6 32.5 372.5 31.8C375.7 31.0 376.7 30.7 377.1 30.5C377.4 30.4 378.2 30.1 378.9 30.0C379.7 29.9 380.5 29.7 380.7 29.5C380.9 29.4 381.7 29.2 382.4 29.0C383.1 28.9 384.8 28.5 386.1 28.1C387.5 27.7 389.5 27.2 390.6 27.0C394.6 26.0 395.4 25.8 396.4 25.5C396.9 25.4 398.8 25.0 400.5 24.6C402.2 24.3 404.4 23.8 405.2 23.6C409.6 22.7 420.3 20.8 425.8 20.0C427.5 19.8 429.2 19.5 429.5 19.4C429.8 19.3 431.6 19.1 433.4 18.9C436.5 18.5 437.4 18.4 443.9 17.6C445.5 17.4 448.6 17.1 450.6 17.0C452.7 16.9 455.4 16.6 456.6 16.5C459.5 16.2 474.8 15.7 477.8 15.8C479.1 15.9 480.4 16.0 480.6 16.2C481.0 16.6 481.0 42.7 480.6 43.3C480.3 43.6 478.2 43.7 464.6 43.8C455.9 43.9 447.8 44.1 446.4 44.2C445.0 44.4 441.5 44.6 438.5 44.9C435.5 45.1 432.5 45.4 431.8 45.5C431.0 45.6 429.5 45.8 428.4 45.9C424.8 46.2 413.0 47.7 407.9 48.6C401.9 49.7 395.4 51.0 390.6 52.0C388.6 52.4 387.7 52.6 384.2 53.5C383.2 53.7 381.9 54.1 381.2 54.2C379.5 54.6 372.6 56.4 370.6 57.0C369.7 57.3 368.3 57.7 367.5 57.8C366.7 58.0 365.7 58.3 365.2 58.4C364.8 58.6 363.4 59.0 362.2 59.3C361.1 59.7 358.7 60.4 356.9 61.0C355.1 61.5 352.6 62.2 351.4 62.6C350.1 63.0 348.8 63.4 348.3 63.6C347.9 63.8 347.3 64.0 347.2 64.0C347.0 64.0 346.6 64.2 346.2 64.4C345.8 64.6 345.0 64.9 344.4 65.0C343.8 65.2 343.0 65.4 342.6 65.6C341.8 66.0 335.5 68.4 329.4 70.7C327.1 71.5 326.9 71.6 325.2 72.4C324.4 72.7 323.7 73.0 323.6 73.0C323.5 73.0 323.1 73.2 322.7 73.4C322.2 73.6 321.0 74.1 320.0 74.5C319.0 74.9 317.5 75.6 316.8 75.9C316.0 76.3 314.5 77.0 313.4 77.4C307.6 80.0 292.4 87.3 285.8 90.9C277.5 95.2 275.4 96.4 274.4 97.0C272.8 97.9 272.0 98.4 269.4 99.7C268.0 100.5 266.6 101.3 266.2 101.5C265.9 101.7 263.0 103.5 259.9 105.4C256.7 107.3 252.8 109.7 251.2 110.7C249.7 111.7 247.4 113.2 246.1 113.9C243.8 115.4 238.4 118.9 236.6 120.2C236.1 120.6 234.2 121.9 232.5 123.2C225.9 127.9 223.0 130.1 216.7 135.1C209.9 140.5 206.5 143.3 204.5 145.1C203.9 145.7 202.4 147.0 201.2 148.0C195.7 153.0 193.6 155.0 186.9 161.7C178.2 170.3 169.3 180.0 163.1 187.6C161.5 189.7 159.5 192.1 158.8 193.0C156.2 196.1 155.0 197.6 153.1 200.2C152.0 201.7 150.4 203.8 149.6 204.9C148.8 206.0 147.6 207.6 146.9 208.5C146.3 209.4 145.3 210.8 144.8 211.6C143.8 213.0 139.0 220.2 135.4 225.8C134.5 227.1 132.7 230.0 131.4 232.4C130.0 234.7 128.7 236.9 128.4 237.2C127.9 237.7 127.8 237.8 123.5 237.8C119.9 237.8 119.0 237.7 118.8 237.4Z"/><path d="M407.6 748.5C406.1 748.4 403.0 748.2 400.8 748.0C398.5 747.9 395.2 747.6 393.4 747.4C391.6 747.2 389.2 747.0 388.1 746.9C387.0 746.8 385.1 746.6 383.9 746.4C382.6 746.2 380.8 746.0 379.8 745.9C378.7 745.8 377.0 745.6 376.0 745.4C375.0 745.2 373.4 745.0 372.6 744.9C370.9 744.7 365.8 743.9 363.0 743.4C362.0 743.2 359.8 742.8 358.1 742.5C356.5 742.2 354.2 741.7 353.1 741.5C352.0 741.2 350.9 741.0 350.7 741.0C349.7 741.0 334.6 737.5 331.0 736.4C330.4 736.2 329.0 735.8 327.9 735.5C324.4 734.6 321.9 733.8 313.4 730.9C304.5 728.0 304.1 727.8 297.8 725.3C295.5 724.4 292.9 723.4 292.1 723.1C287.9 721.5 270.3 713.2 263.1 709.3C259.3 707.3 253.2 703.7 248.8 700.9C236.2 693.1 235.7 692.7 227.5 686.9C221.6 682.7 210.9 674.3 206.4 670.4C195.5 661.0 184.5 650.4 176.5 641.6C175.5 640.5 173.9 638.8 172.9 637.8C169.9 634.6 164.8 628.7 162.4 625.6C162.0 625.1 161.1 624.0 160.4 623.1C155.5 617.3 153.7 615.0 150.1 610.2C147.9 607.3 145.6 604.1 144.9 603.1C144.2 602.2 143.1 600.6 142.4 599.8C140.8 597.7 133.1 586.1 130.1 581.2C129.3 579.9 128.1 578.0 127.4 576.9C126.1 574.9 122.0 567.9 122.0 567.6C122.0 567.6 121.1 566.0 120.0 564.1C116.5 557.9 110.5 546.0 108.0 540.5C107.2 538.6 106.2 536.4 105.8 535.5C103.7 530.8 102.1 527.1 101.0 523.8C100.8 523.0 99.8 520.2 98.9 517.6C98.0 515.0 97.1 512.4 97.0 511.9C96.8 511.4 96.6 510.8 96.5 510.6C96.4 510.3 96.1 509.5 95.9 508.8C95.7 508.0 95.3 506.6 95.0 505.6C94.0 502.4 93.5 500.4 91.4 492.0C90.2 487.4 89.1 482.9 89.0 482.1C88.9 481.3 88.6 479.8 88.4 478.9C88.1 477.3 87.8 475.8 86.6 469.5C86.4 468.3 86.1 466.2 85.9 464.8C85.7 463.3 85.4 461.3 85.2 460.3C85.1 459.3 85.0 458.2 85.1 457.9L85.2 457.3L90.1 457.2C92.7 457.1 100.4 457.0 107.2 457.1C118.5 457.1 119.6 457.2 119.9 457.6C120.0 457.8 120.4 459.4 120.7 461.2C121.6 465.9 122.9 472.1 123.7 475.9C124.0 477.0 124.4 478.7 124.6 479.8C124.9 480.8 125.2 482.0 125.3 482.5C125.5 483.0 125.8 484.2 126.0 485.2C126.7 488.4 127.9 492.6 129.5 497.6C131.9 505.0 132.3 506.1 134.4 511.5C134.8 512.5 135.8 514.9 136.5 516.8C137.6 519.5 139.4 523.9 141.6 528.9C145.6 537.9 154.8 556.1 158.1 561.4C158.8 562.5 159.8 564.2 160.4 565.2C162.0 568.0 162.0 568.0 163.4 570.0C164.1 571.0 165.6 573.3 166.7 575.1C170.3 581.0 169.9 580.4 174.6 586.8C178.8 592.6 182.6 597.5 184.2 599.4C185.4 600.6 186.8 602.3 190.0 606.2C191.4 608.0 194.1 611.0 196.0 612.9C203.5 620.6 205.5 622.7 206.9 624.0C207.7 624.7 209.3 626.2 210.4 627.2C215.5 632.0 217.8 634.0 224.6 639.5C227.1 641.5 229.4 643.4 229.7 643.7C230.5 644.3 237.4 649.3 239.3 650.6C240.1 651.2 241.8 652.3 243.1 653.2C247.9 656.6 250.0 658.0 250.2 658.0C250.3 658.0 250.6 658.2 250.7 658.3C250.9 658.5 252.4 659.5 254.0 660.5C255.7 661.5 257.5 662.7 258.1 663.0C263.2 666.3 275.4 673.0 283.6 677.1C289.1 679.9 294.0 682.3 294.4 682.4C299.2 684.6 303.3 686.3 303.9 686.6C305.3 687.3 308.9 688.7 311.4 689.6C312.8 690.0 315.4 691.1 317.4 691.8C324.8 694.8 331.0 696.9 339.2 699.2C340.7 699.7 342.3 700.1 342.8 700.3C343.2 700.4 344.4 700.7 345.2 701.0C346.1 701.2 348.1 701.8 349.6 702.2C353.3 703.3 354.7 703.6 357.2 704.2C358.4 704.5 360.6 705.0 362.1 705.4C363.6 705.7 365.6 706.2 366.5 706.4C367.4 706.6 369.1 707.0 370.2 707.2C375.6 708.5 385.6 710.3 392.1 711.2C398.3 712.1 411.6 713.6 416.2 713.9C418.8 714.1 419.5 714.3 419.5 715.2C419.5 715.4 419.5 722.9 419.5 731.9C419.5 746.7 419.4 748.2 419.1 748.4C418.6 748.8 412.4 748.8 407.6 748.5Z"/></g><g id="ticks"><path d="M464.5 130.3C464.3 129.9 464.2 120.3 464.2 100.8L464.2 71.8L464.8 71.4C465.3 71.1 466.5 71.0 472.6 71.0C478.1 71.0 480.0 71.1 480.3 71.3C480.7 71.6 480.8 73.5 480.8 101.0C480.7 124.0 480.7 130.4 480.4 130.5C480.3 130.7 476.7 130.7 472.4 130.7C465.1 130.7 464.8 130.7 464.5 130.3Z"/><path d="M592.0 157.8C590.8 157.2 588.1 156.1 586.0 155.1C581.3 153.1 580.5 152.7 580.5 152.0C580.5 151.5 580.9 150.5 585.1 141.2C587.6 135.6 588.2 134.3 590.7 129.1C591.3 127.8 591.8 126.7 591.8 126.6C591.8 126.5 592.0 126.0 592.2 125.4C592.5 124.8 593.7 122.0 595.0 119.1C596.2 116.2 597.7 113.1 598.1 112.1C598.6 111.1 599.0 110.2 599.0 110.1C599.0 110.0 599.3 109.2 599.8 108.3C601.1 105.3 601.9 103.7 602.5 102.2C603.5 99.7 605.4 96.2 605.6 96.2C605.9 96.2 607.2 96.7 609.2 97.6C609.6 97.8 610.0 98.0 610.1 98.0C610.2 98.0 611.1 98.4 612.2 98.9C613.2 99.4 614.8 100.1 615.6 100.4C617.6 101.1 619.8 102.2 619.8 102.5C619.8 102.7 619.2 104.1 618.4 105.9C618.2 106.3 617.7 107.4 617.4 108.2C616.6 110.3 616.3 110.8 615.0 113.5C613.6 116.6 612.9 118.3 611.7 121.1C610.9 123.0 607.8 130.1 607.4 131.2C607.2 131.6 607.0 132.0 607.0 132.1C607.0 132.2 606.3 133.8 605.3 135.8C604.4 137.8 603.5 139.8 603.2 140.4C603.0 140.9 602.4 142.3 601.9 143.3C601.4 144.4 601.0 145.3 601.0 145.4C601.0 145.5 600.8 146.1 600.5 146.8C600.2 147.4 599.8 148.2 599.6 148.6C599.4 149.0 599.0 150.0 598.7 150.8C597.3 153.7 597.0 154.4 596.4 156.0C595.7 157.7 594.9 158.8 594.4 158.7C594.2 158.7 593.2 158.3 592.0 157.8Z"/><path d="M685.2 231.8C685.2 231.7 683.0 229.3 680.2 226.5C677.5 223.7 675.2 221.3 675.2 221.1C675.2 220.9 681.4 214.8 689.5 206.9C691.8 204.7 698.7 197.9 705.0 191.8C711.3 185.6 717.3 179.7 718.5 178.6C719.7 177.5 720.8 176.4 721.0 176.1C721.3 175.8 721.6 175.7 722.0 175.9C722.7 176.2 732.8 186.3 732.8 186.6C732.8 186.8 727.3 192.3 720.6 198.9C713.9 205.5 706.5 212.7 704.2 215.0C687.6 231.4 686.9 232.0 686.1 232.0C685.6 232.0 685.2 231.9 685.2 231.8Z"/><path d="M739.7 320.7C739.3 320.1 737.0 314.5 737.0 314.1C737.0 314.0 736.8 313.5 736.5 312.9C735.6 311.0 735.0 309.5 735.0 309.4C735.0 309.3 734.8 308.7 734.4 308.1C734.0 307.2 734.0 306.9 734.2 306.5C734.3 306.3 735.7 305.6 737.3 304.9C738.8 304.3 741.2 303.3 742.5 302.7C743.8 302.2 745.1 301.6 745.4 301.5C747.3 300.7 748.6 300.1 750.5 299.4C751.7 298.9 753.9 298.0 755.4 297.4C756.9 296.7 759.5 295.7 761.2 295.0C765.2 293.4 767.2 292.5 771.9 290.6C777.3 288.3 777.5 288.2 781.7 286.5C783.8 285.7 785.6 285.0 785.7 285.0C785.9 285.0 786.8 284.6 787.8 284.1C790.6 282.8 792.8 282.0 793.7 281.8C794.3 281.7 794.5 281.8 794.8 282.3C795.3 283.0 797.7 288.8 798.0 289.9C798.1 290.3 798.4 291.0 798.6 291.4C799.2 292.6 799.9 294.3 800.2 295.3C800.7 296.7 800.8 296.6 796.6 298.3C793.7 299.6 789.6 301.3 788.9 301.6C788.5 301.8 787.2 302.4 786.0 302.8C784.8 303.3 781.9 304.5 779.5 305.5C773.3 308.1 772.3 308.5 771.0 309.0C770.4 309.2 769.6 309.6 769.2 309.7C768.9 309.8 766.4 310.9 763.8 312.0C761.1 313.1 758.5 314.2 758.0 314.4C757.0 314.9 749.4 317.9 744.5 319.9C742.6 320.6 740.8 321.2 740.5 321.2C740.2 321.2 739.9 321.0 739.7 320.7Z"/><path d="M761.4 416.2C761.0 416.0 761.0 415.3 761.0 408.1C761.0 403.5 761.1 400.0 761.2 399.8C761.5 399.4 765.1 399.4 791.4 399.4C818.3 399.4 821.3 399.4 821.6 399.8C822.0 400.1 822.0 401.2 822.0 408.0C822.0 413.5 822.0 415.9 821.8 416.1C821.4 416.5 762.1 416.6 761.4 416.2Z"/></g><g id="sbs"><path d="M21.7 437.6C21.4 437.2 21.7 436.7 23.0 435.2C23.5 434.6 24.0 434.0 24.0 433.9C24.0 433.8 24.2 433.6 24.5 433.3C24.7 433.1 25.9 431.7 27.1 430.2C28.4 428.7 30.0 426.8 30.7 425.9C31.4 425.1 32.5 423.7 33.2 422.9C33.8 422.1 34.4 421.3 34.5 421.2C34.6 421.2 35.2 420.4 35.9 419.6C36.6 418.8 37.9 417.3 38.8 416.2C39.6 415.2 40.8 413.8 41.4 413.1C42.4 412.0 42.9 411.3 45.1 408.6C45.5 408.1 46.3 407.2 46.8 406.6C47.3 406.1 48.3 404.8 49.1 403.9C49.9 402.9 51.4 401.2 52.5 400.0C53.6 398.8 55.0 397.3 55.6 396.5C56.2 395.8 56.9 395.1 57.1 395.0C57.4 394.8 80.3 394.6 132.1 394.4C148.2 394.3 162.1 394.1 163.0 394.0C165.7 393.6 168.1 392.3 170.0 390.3C171.6 388.6 172.6 386.8 173.4 383.9C173.7 382.9 174.1 381.4 174.4 380.6C175.0 378.4 175.0 374.9 174.3 373.6C173.2 371.6 172.0 370.7 169.5 370.0C168.8 369.8 158.9 369.7 132.7 369.6C101.7 369.6 96.3 369.5 92.8 369.2C90.5 368.9 88.1 368.6 87.3 368.4C86.5 368.1 84.9 367.7 83.6 367.3C82.4 367.0 81.0 366.6 80.6 366.4C80.2 366.2 79.7 366.0 79.6 366.0C79.1 366.0 74.7 363.6 72.9 362.3C71.8 361.5 70.1 360.0 69.1 359.0C64.0 353.5 62.3 348.4 62.3 339.0C62.3 335.5 62.4 334.3 62.9 331.7C63.7 327.8 64.7 323.8 66.1 319.2C66.5 318.1 66.9 316.7 67.0 316.1C67.1 315.6 67.4 314.7 67.6 314.2C67.8 313.8 68.2 312.5 68.5 311.5C68.8 310.5 69.2 308.9 69.5 308.1C69.7 307.3 70.2 305.8 70.5 304.8C72.0 299.3 73.0 296.4 73.9 294.4C76.9 287.7 79.3 283.7 83.2 279.4C85.6 276.7 88.9 273.4 90.2 272.4C91.0 271.9 92.2 270.9 93.0 270.4C94.4 269.4 97.2 267.6 99.1 266.6C101.9 265.1 103.5 264.3 104.2 264.0C110.8 261.5 114.3 260.5 119.4 259.7C122.6 259.2 123.1 259.2 179.5 259.0C210.8 258.9 240.1 258.9 244.6 259.0L252.9 259.1L253.0 260.1C253.0 260.6 252.8 261.7 252.5 262.6C251.5 265.6 251.0 267.6 251.0 268.0C251.0 268.3 250.8 269.1 250.5 269.8C250.2 270.4 250.0 271.3 250.0 271.6C250.0 271.9 249.8 272.4 249.6 272.8C249.5 273.2 249.2 273.8 249.1 274.3C249.0 274.8 248.8 275.7 248.5 276.5C247.8 278.8 247.1 281.0 246.6 282.8C246.4 283.6 246.0 285.1 245.7 285.9C245.5 286.7 244.9 288.7 244.5 290.4C244.1 292.0 243.6 293.9 243.4 294.5C243.2 295.1 242.7 296.6 242.4 297.7C241.9 299.1 241.5 299.9 241.2 300.1C240.7 300.3 228.5 300.4 184.8 300.5C133.2 300.6 128.8 300.7 127.5 301.1C125.1 301.8 123.0 303.0 121.2 304.7C119.2 306.7 118.5 307.8 117.6 310.5C116.3 313.9 115.9 316.5 115.9 320.0C115.9 323.2 115.9 323.2 116.6 324.3C117.8 325.9 119.5 326.7 122.4 327.0C123.8 327.1 139.3 327.2 159.7 327.2C197.0 327.3 197.5 327.3 203.2 328.5C208.2 329.6 212.8 331.3 215.8 333.1C219.3 335.1 223.5 339.3 225.7 342.8C228.1 346.6 229.6 351.4 230.0 356.8C230.4 361.0 229.7 367.9 228.4 373.0C227.3 377.1 226.9 378.7 226.0 381.6C225.4 383.4 224.7 385.6 224.4 386.5C224.2 387.4 223.7 388.7 223.5 389.4C223.3 390.1 222.8 391.6 222.4 392.9C222.0 394.1 221.5 395.5 221.3 395.9C221.2 396.3 220.7 397.4 220.4 398.2C219.2 401.4 217.3 405.1 214.6 409.2C212.3 413.0 207.0 419.1 203.6 422.0C201.9 423.5 197.9 426.6 197.2 427.1C196.1 427.8 190.4 430.8 188.5 431.8C187.1 432.4 185.8 433.0 185.6 433.0C185.5 433.0 185.1 433.1 184.8 433.3C184.1 433.7 181.2 434.6 178.1 435.4C174.6 436.4 167.6 437.4 162.6 437.6C161.2 437.7 129.0 437.8 91.0 437.8C38.0 437.9 21.9 437.8 21.7 437.6Z"/><path d="M224.2 436.7C224.0 436.3 224.1 436.0 224.4 435.4C224.6 435.0 224.9 434.0 225.1 433.2C225.4 432.0 225.7 431.2 227.0 426.9C227.3 425.9 227.7 424.4 228.0 423.5C228.2 422.6 228.7 421.1 229.0 420.1C229.3 419.2 229.7 417.6 230.0 416.6C230.7 414.1 231.0 413.0 231.4 411.9C231.6 411.3 232.1 409.6 232.5 408.1C233.3 405.4 234.0 403.1 234.6 401.1C234.8 400.6 235.2 399.3 235.5 398.2C235.8 397.2 236.3 395.7 236.5 394.9C237.4 391.9 238.1 389.6 239.0 386.8C239.5 385.2 240.2 383.0 240.5 382.0C240.8 381.0 241.3 379.3 241.5 378.4C241.8 377.4 242.2 376.2 242.4 375.8C242.6 375.3 242.8 374.4 243.0 373.9C243.5 371.6 244.4 368.6 246.0 363.1C246.7 360.9 248.7 354.1 249.1 352.6C250.7 347.0 251.4 344.6 251.7 344.1C251.8 343.8 252.0 343.2 252.1 342.6C252.2 342.0 252.4 341.2 252.6 340.8C252.8 340.4 253.0 339.9 253.0 339.6C253.0 339.3 253.2 338.4 253.5 337.7C254.0 336.1 254.6 334.3 255.9 329.9C256.9 326.8 257.3 325.3 258.5 321.1C259.1 318.8 261.2 311.7 261.8 310.0C262.0 309.2 262.4 308.0 262.6 307.2C263.8 302.9 264.3 301.3 264.6 300.5C264.8 300.0 265.2 298.8 265.5 297.9C265.7 296.9 266.2 295.6 266.4 294.9C266.6 294.2 266.9 293.2 267.0 292.6C267.2 291.7 268.6 287.2 269.3 285.4C269.6 284.3 271.4 278.3 272.0 276.1C272.2 275.2 272.8 273.4 273.1 272.1C274.1 269.0 274.5 267.6 275.0 265.9C275.2 265.1 275.5 264.2 275.6 264.1C275.7 263.9 275.9 263.2 276.1 262.4C276.3 261.6 276.7 260.6 276.9 260.2C277.4 259.4 277.5 259.4 279.5 259.2C280.7 259.2 311.0 259.1 347.0 259.1L412.4 259.1L415.5 259.7C419.2 260.4 420.8 260.8 423.1 261.7C427.3 263.3 430.2 265.2 433.5 268.5C435.9 270.8 437.3 273.0 438.9 276.8C441.3 282.1 441.9 285.1 441.8 292.2C441.8 298.1 441.3 302.0 439.9 307.6C438.0 314.8 437.7 315.7 436.9 318.2C435.2 323.0 431.7 329.6 428.5 333.9C425.7 337.6 420.4 342.8 418.1 344.0C417.3 344.4 417.4 344.9 418.3 345.4C422.0 347.3 425.6 351.2 427.8 355.6C430.1 360.2 431.1 366.8 430.4 373.5C430.1 375.5 429.8 377.7 429.6 378.4C429.4 379.1 429.2 380.1 429.1 380.8C429.0 381.4 428.8 382.4 428.6 383.1C428.4 383.8 427.9 385.7 427.5 387.2C426.6 390.5 424.9 396.0 424.3 397.2C422.8 400.7 420.9 404.6 420.0 406.0C419.6 406.6 418.9 407.7 418.5 408.4C417.6 410.0 415.8 412.7 414.3 414.7C413.1 416.4 407.3 422.3 405.0 424.3C402.0 426.8 397.4 429.9 394.7 431.1C394.2 431.3 393.7 431.6 393.5 431.7C392.7 432.2 391.1 432.9 387.5 434.2C385.2 435.1 380.8 436.1 376.5 436.8C375.4 437.0 350.0 437.1 299.7 437.1L224.5 437.2L224.2 436.7ZM366.2 394.3C369.5 393.4 372.4 391.5 374.0 389.1C374.7 388.0 375.9 384.9 376.6 382.4C378.2 376.2 378.3 375.3 377.5 373.1C376.5 370.3 375.0 369.2 371.1 368.6C368.9 368.3 363.9 368.2 332.0 368.3C295.8 368.4 295.5 368.4 295.1 368.9C294.9 369.1 294.6 370.0 294.3 370.8C293.8 372.6 292.8 376.2 292.5 377.0C292.4 377.3 292.1 378.5 291.8 379.5C291.5 380.5 291.0 382.1 290.7 383.0C290.5 383.9 289.9 385.9 289.5 387.4C289.0 388.9 288.5 390.9 288.2 391.8C287.7 393.6 287.6 394.7 288.1 394.8C288.2 394.9 305.5 394.9 326.4 394.9C363.7 394.8 364.4 394.8 366.2 394.3ZM378.8 326.3C381.2 325.4 382.6 324.6 384.3 323.0C386.2 321.3 387.4 319.1 388.3 315.8C389.5 311.2 389.8 310.3 390.0 308.8C390.8 304.3 389.1 301.6 385.1 300.8C383.4 300.4 315.4 300.4 314.4 300.7C313.7 301.0 313.5 301.4 312.5 305.1C312.1 306.6 311.6 308.2 311.5 308.6C311.4 309.0 311.0 310.3 310.8 311.3C310.5 312.4 310.0 314.1 309.8 315.1C309.5 316.1 309.0 317.9 308.7 319.3C308.3 320.6 307.7 322.5 307.4 323.6C306.7 325.6 306.6 326.5 306.9 326.8C307.0 326.9 322.9 327.0 342.2 326.9C377.3 326.9 377.4 326.9 378.8 326.3Z"/><path d="M422.3 436.9C421.8 436.5 422.0 435.9 422.6 435.0C423.0 434.5 424.4 432.5 425.7 430.5C427.0 428.5 428.3 426.6 428.5 426.2C428.7 425.9 429.7 424.5 430.6 423.1C433.2 419.3 433.4 419.1 433.7 418.9C433.9 418.8 434.0 418.6 434.0 418.5C434.0 418.4 435.1 416.7 436.4 414.7C437.8 412.7 440.7 408.4 442.9 405.1C446.6 399.5 448.1 397.3 448.5 397.0C448.6 396.9 448.9 396.5 449.2 396.0C449.8 395.0 450.5 394.6 452.2 394.4C452.9 394.3 472.7 394.2 496.4 394.2C520.0 394.2 543.2 394.1 547.9 394.0C555.5 393.8 556.5 393.8 557.8 393.3C562.2 391.7 564.5 389.2 566.1 384.5C567.3 380.6 568.0 377.3 567.8 375.9C567.4 372.5 565.1 370.4 561.4 369.7C560.2 369.6 549.0 369.5 525.6 369.5C497.3 369.5 490.8 369.4 486.8 369.1C484.1 368.9 481.3 368.6 480.5 368.4C479.8 368.2 478.7 368.0 478.1 367.9C474.4 367.3 468.1 364.4 464.2 361.7C460.6 359.0 457.4 354.4 455.6 349.4C455.4 349.0 455.1 347.7 454.8 346.6C454.2 343.8 454.2 336.0 454.8 332.0C455.4 328.5 457.3 321.2 459.5 314.2C459.7 313.5 460.2 311.9 460.5 310.8C461.1 308.5 461.8 305.8 462.4 304.1C462.6 303.6 463.1 301.9 463.5 300.5C464.8 296.3 465.6 294.3 467.8 289.9C470.9 283.7 476.2 277.1 482.0 272.2C484.3 270.3 490.7 266.3 494.0 264.7C496.1 263.7 497.7 263.0 497.9 263.0C498.0 263.0 498.4 262.8 498.8 262.6C500.2 262.0 501.8 261.5 504.8 260.7C514.1 258.4 509.1 258.5 581.8 258.5C637.8 258.5 645.0 258.5 645.3 258.9C645.6 259.3 645.3 261.2 644.4 264.1C643.7 266.4 642.4 270.6 641.5 273.9C641.2 275.0 640.7 276.8 640.4 277.9C640.1 279.0 639.6 280.6 639.4 281.4C639.1 282.2 638.8 283.6 638.5 284.4C638.3 285.2 637.7 287.1 637.4 288.5C637.0 289.9 636.5 291.6 636.4 292.1C635.9 293.7 635.3 295.5 635.0 296.8C634.6 298.4 634.0 299.7 633.5 299.9C633.3 300.0 608.0 300.2 577.2 300.3C516.5 300.4 520.8 300.3 517.3 301.7C514.5 302.9 512.3 304.9 510.7 308.0C509.2 310.8 507.5 317.2 507.5 320.3C507.5 323.0 509.1 325.3 511.8 326.3L513.4 326.9L549.6 326.9C569.6 326.9 587.1 327.0 588.6 327.1C593.1 327.3 601.5 329.2 604.2 330.7C604.6 330.8 605.0 331.0 605.2 331.0C605.7 331.0 609.4 333.1 611.3 334.6C614.3 336.8 616.8 339.4 618.4 341.9C621.4 346.5 622.8 351.2 623.3 357.7C623.7 363.4 623.1 367.4 620.9 376.8C620.3 379.1 620.0 380.3 619.0 383.6C617.2 389.6 616.9 390.4 616.5 391.6C616.2 392.3 616.0 393.1 616.0 393.3C616.0 393.5 615.8 394.1 615.5 394.6C615.2 395.2 615.0 395.7 615.0 395.9C615.0 396.1 613.4 399.6 612.6 401.1C612.4 401.5 611.9 402.4 611.6 403.1C607.8 410.5 603.0 416.6 597.2 421.7C593.4 425.0 592.6 425.6 590.0 427.2C587.1 429.0 584.9 430.2 579.6 432.5C575.1 434.5 567.1 436.3 560.4 436.9C556.8 437.2 422.6 437.2 422.3 436.9Z"/></g><g id="num"><path d="M340.8 644.4C340.4 643.9 340.5 642.8 341.7 638.6C342.2 636.8 342.8 634.6 343.0 633.6C343.3 632.7 343.9 630.5 344.4 628.8C344.8 627.1 345.8 623.4 346.5 620.7C347.2 617.9 348.5 613.1 349.3 610.1C350.1 607.1 350.9 604.2 351.0 603.8C351.1 603.3 351.4 602.3 351.6 601.6C352.0 600.2 352.4 598.7 352.9 596.6C353.0 595.8 353.4 594.5 353.6 593.8C353.8 593.0 354.2 591.6 354.5 590.6C355.6 586.6 357.5 581.2 358.5 579.1C358.9 578.2 359.2 577.4 359.2 577.3C359.2 577.3 360.1 575.5 361.1 573.4C363.9 567.7 368.7 560.9 373.0 556.5C374.6 554.8 379.1 550.8 380.9 549.5C386.2 545.4 395.4 541.1 402.4 539.4C403.9 539.0 405.7 538.6 406.5 538.4C407.3 538.2 409.1 537.8 410.6 537.5C412.1 537.2 414.9 536.7 416.9 536.4C418.8 536.0 421.1 535.6 422.0 535.4C422.9 535.2 424.2 535.0 424.9 534.9C425.6 534.8 426.7 534.6 427.4 534.4C428.1 534.2 430.0 533.8 431.6 533.5C433.3 533.2 435.6 532.8 436.8 532.5C438.0 532.2 439.3 532.0 439.7 532.0C440.2 532.0 441.4 531.8 442.6 531.5C443.7 531.3 445.4 530.9 446.2 530.7C450.6 530.0 451.7 529.7 456.0 528.9C458.5 528.4 461.6 527.8 462.9 527.5C464.1 527.2 466.7 526.7 468.6 526.4C470.6 526.0 472.6 525.6 473.3 525.5C473.9 525.3 475.4 525.1 476.5 524.9C479.0 524.5 482.3 523.8 483.6 523.5C484.2 523.3 485.5 523.0 486.6 522.9C489.1 522.5 493.5 521.6 498.9 520.5C499.6 520.4 500.9 520.1 501.9 519.9C506.5 518.9 507.5 518.7 509.0 517.8C511.1 516.8 513.2 514.6 514.2 512.6C515.4 510.1 516.8 505.1 516.8 502.9C516.8 501.5 515.9 499.7 515.0 499.0C513.0 497.6 517.2 497.7 448.8 497.6C414.0 497.5 385.5 497.5 385.3 497.4C384.9 497.2 384.9 496.4 385.4 495.5C385.6 495.2 386.3 493.6 387.0 492.0C390.0 485.3 394.1 478.9 399.3 472.9C405.7 465.5 416.4 458.7 426.5 455.6L428.6 455.0L482.1 455.0C522.1 454.9 536.2 455.0 537.8 455.2C540.7 455.7 543.8 456.4 545.9 457.1C546.8 457.5 547.9 457.9 548.3 458.0C548.7 458.1 549.2 458.3 549.4 458.5C549.5 458.6 550.3 459.1 551.1 459.5C552.8 460.4 553.9 461.2 556.3 463.3C559.3 465.9 561.5 469.0 563.6 473.6C566.8 480.4 567.9 491.9 566.1 500.3C564.8 506.7 564.5 508.1 564.4 508.3C564.3 508.4 564.1 509.2 563.9 510.2C563.0 514.5 561.4 520.0 560.0 523.4C557.6 529.5 557.0 531.0 555.8 533.1C548.7 545.7 537.4 554.8 524.2 558.5C521.5 559.2 513.6 561.1 507.1 562.5C505.9 562.7 504.3 563.1 503.6 563.3C502.9 563.4 501.5 563.7 500.5 563.9C499.5 564.1 498.3 564.4 498.0 564.5C497.7 564.6 496.9 564.8 496.4 564.9C495.8 565.0 494.5 565.2 493.4 565.5C489.2 566.4 486.5 567.0 481.6 568.0C478.9 568.6 475.6 569.2 474.2 569.5C471.7 570.0 468.6 570.7 464.6 571.5C463.2 571.8 461.4 572.2 460.6 572.4C459.8 572.6 458.3 572.9 457.2 573.1C454.5 573.6 452.8 574.0 451.5 574.4C450.9 574.6 449.8 574.8 449.2 574.9C448.6 575.0 447.3 575.2 446.2 575.5C444.2 576.0 442.6 576.3 439.8 576.9C438.7 577.1 437.6 577.3 437.2 577.4C436.9 577.6 436.0 577.8 435.2 577.9C434.5 578.0 433.3 578.2 432.6 578.4C430.5 579.0 428.0 579.5 426.0 579.9C425.0 580.1 424.0 580.3 423.8 580.4C423.5 580.5 422.2 580.7 420.8 581.0C412.4 582.5 409.0 584.0 406.7 587.2C404.8 590.0 403.9 592.3 403.0 596.4C402.7 597.6 402.4 598.9 402.3 599.2C402.2 599.6 402.3 599.8 402.9 600.0C403.3 600.2 424.8 600.2 467.9 600.2L532.2 600.2L532.6 600.8C533.0 601.3 532.9 601.5 532.5 602.9C531.5 606.2 531.0 607.9 531.0 608.4C531.0 608.7 530.8 609.3 530.6 609.9C530.4 610.4 530.1 611.4 530.0 612.0C529.9 612.6 529.3 614.8 528.8 616.9C528.2 618.9 527.3 622.6 526.6 625.0C526.0 627.4 525.3 630.1 525.0 631.0C524.8 631.9 524.2 634.1 523.7 635.9C521.8 642.8 521.2 644.2 520.3 644.5C520.0 644.7 483.8 644.8 430.4 644.8C352.2 644.8 341.0 644.7 340.8 644.4Z"/><path d="M650.0 644.3L649.4 643.8L650.1 641.2C650.4 639.8 650.9 638.0 651.1 637.1C651.3 636.3 652.0 633.6 652.6 631.1C653.3 628.6 653.9 626.2 654.0 625.6C654.2 625.1 654.4 624.2 654.5 623.6C654.7 623.1 655.0 622.0 655.1 621.1C655.6 619.1 655.8 618.3 657.5 612.4C658.2 609.8 658.9 606.8 659.1 605.6C659.2 605.0 659.4 604.4 659.5 604.4C660.0 604.1 659.7 603.2 659.1 603.0C658.6 602.8 641.3 602.7 600.6 602.9C566.6 602.9 542.7 602.9 542.5 602.8C542.2 602.6 542.3 602.2 542.7 600.5C543.0 599.3 543.4 597.4 543.7 596.3C544.0 595.2 544.4 593.6 544.6 592.9C545.4 590.0 546.6 585.5 547.1 583.2C547.3 582.5 547.7 581.0 548.0 579.9C548.2 578.8 548.6 577.3 548.7 576.6C548.9 575.9 549.2 574.6 549.5 573.8C550.2 571.1 550.5 570.0 550.9 568.4C552.6 560.5 553.6 557.7 557.1 551.2C559.1 547.4 561.0 544.5 563.2 542.1C565.2 540.0 572.0 534.1 575.7 531.3C577.7 529.8 579.7 528.2 584.5 524.2C587.0 522.2 597.2 514.0 598.1 513.3C600.7 511.2 606.5 506.6 608.4 505.0C609.7 504.0 611.7 502.3 613.0 501.2C614.3 500.2 615.9 498.9 616.5 498.4C617.1 497.8 618.4 496.8 619.2 496.1C621.0 494.8 626.8 490.1 628.3 488.9C628.8 488.5 629.4 488.0 629.7 487.8C629.9 487.5 631.0 486.6 632.1 485.7C633.2 484.8 636.8 482.0 640.0 479.4C643.2 476.8 645.9 474.6 646.0 474.5C646.1 474.3 647.0 473.6 654.6 467.6C657.1 465.6 659.6 463.6 660.2 463.0C660.9 462.5 663.7 460.2 666.5 458.0C669.3 455.8 672.4 453.3 673.4 452.5C674.4 451.7 675.7 450.8 676.2 450.5C677.1 450.0 677.4 450.0 712.8 450.0C744.3 450.0 748.5 450.0 748.8 450.4C749.1 450.8 749.0 451.7 748.0 455.0C746.7 459.8 746.2 461.6 745.5 464.5C745.1 466.2 744.6 468.2 744.4 469.0C744.2 469.8 743.7 471.6 743.4 473.1C742.7 475.9 741.8 479.6 741.0 482.5C740.7 483.4 739.2 489.3 737.6 495.6C736.0 501.9 734.4 508.4 733.9 509.9C733.4 511.4 732.6 514.5 732.0 516.8C730.9 521.6 730.6 522.5 730.0 525.0C729.7 526.0 729.3 527.5 729.1 528.4C728.6 530.4 726.8 537.8 725.5 542.4C725.0 544.4 723.9 548.6 723.1 551.6C722.4 554.6 721.6 557.7 721.4 558.4C721.0 559.5 720.9 560.9 721.1 561.1C721.1 561.1 730.6 561.2 742.1 561.2C761.0 561.4 763.1 561.4 763.2 561.8C763.3 562.1 758.2 568.8 757.5 569.2C757.3 569.4 753.9 573.7 752.1 575.9C750.9 577.5 744.7 585.1 744.5 585.2C744.4 585.4 737.5 593.7 735.9 595.6C734.7 597.1 733.0 599.0 730.9 601.2L729.3 602.8L726.4 602.8C719.4 602.8 709.9 603.1 709.6 603.3C709.3 603.6 709.2 604.0 706.8 613.8C705.7 618.1 704.4 622.8 704.0 624.3C703.6 625.7 702.4 630.2 701.4 634.2C700.4 638.3 699.4 642.1 699.2 642.8C698.7 644.9 701.0 644.8 674.3 644.8C651.8 644.8 650.5 644.7 650.0 644.3ZM670.2 560.8C670.5 560.6 670.8 560.1 670.9 559.7C671.1 558.7 671.8 555.8 672.5 553.5C673.3 550.8 674.0 548.3 674.6 545.4C675.0 543.9 675.6 541.4 676.0 540.0C676.9 536.8 678.4 530.8 679.0 528.2C679.2 527.2 679.8 525.2 680.2 523.8C681.1 520.7 682.7 514.3 683.6 510.4C684.0 508.9 684.4 506.9 684.6 506.1C684.8 505.3 685.4 502.7 686.0 500.2C686.6 497.8 687.2 495.3 687.4 494.6C687.6 493.9 687.9 492.7 687.9 491.9C688.1 490.2 687.8 490.1 686.5 491.2C686.0 491.6 684.0 493.1 682.0 494.6C680.0 496.1 677.2 498.3 675.9 499.4C674.5 500.5 671.7 502.7 669.6 504.2C667.6 505.8 664.8 508.1 663.3 509.3C661.8 510.4 660.3 511.6 660.0 511.9C659.6 512.2 657.7 513.7 655.7 515.3C648.4 521.1 645.9 523.2 643.5 525.0C642.2 526.0 637.2 530.0 632.4 533.9C627.6 537.7 620.8 543.2 617.2 546.0C613.7 548.8 610.1 551.8 609.3 552.5C608.4 553.2 606.9 554.4 606.0 555.1C604.0 556.7 600.1 559.9 599.9 560.2C599.8 560.4 599.9 560.6 600.2 560.7C600.8 561.1 669.6 561.1 670.2 560.8Z"/></g>`;
+var logoUid = 0;
+
+// Baut eine Logo-Instanz (inline, damit die Gruppen einzeln animierbar sind).
+function buildLogo(host) {
+  var uid = "lg" + (++logoUid);
+  var inner = LOGO_INNER.replace(/ id="/g, ' class="lg-');
+  host.textContent = "";
+  var full = svgFromString('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 770" fill="#EEEDE6" fill-rule="evenodd" role="img" aria-label="SBS24">' +
+    '<defs><mask id="' + uid + '" maskUnits="userSpaceOnUse" x="-100" y="-100" width="1040" height="970"><path class="wedge" fill="#fff" d=""/></mask></defs>' +
+    inner +
+    '<circle class="ring" cx="' + PIV.x + '" cy="' + PIV.y + '" r="' + (BEZEL_R + 20) + '" fill="none" stroke="#EEEDE6" stroke-width="4" opacity="0"/>' +
+    '<g class="handg" opacity="0"><line class="hand" x1="' + PIV.x + '" y1="' + PIV.y + '" x2="' + PIV.x + '" y2="' + (PIV.y - BEZEL_R + 4) + '" stroke="#EEEDE6" stroke-width="5" stroke-linecap="round"/>' +
+    '<circle cx="' + PIV.x + '" cy="' + PIV.y + '" r="9"/></g></svg>');
+  // Lünette + Striche in eine maskierte Gruppe verschieben
+  var reveal = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  reveal.setAttribute("class", "reveal");
+  var arc = full.querySelector(".lg-arc"), ticks = full.querySelector(".lg-ticks");
+  arc.parentNode.insertBefore(reveal, arc);
+  reveal.appendChild(arc);
+  reveal.appendChild(ticks);
+  reveal.setAttribute("mask", "url(#" + uid + ")");
+  host.appendChild(full);
+  return full;
+}
+
+// Pie-Keil ab 12 Uhr bis angle (Grad, 0..360), Mittelpunkt = Zeigerdrehpunkt
+function wedgePath(angle) {
+  var R = 900, cx = PIV.x, cy = PIV.y;
+  if (angle <= 0) return "";
+  if (angle >= 359.9) return "M" + (cx - R) + " " + (cy - R) + "H" + (cx + R) + "V" + (cy + R) + "H" + (cx - R) + "Z";
+  var a = (angle - 90) * Math.PI / 180;
+  var x1 = cx + R * Math.cos(a), y1 = cy + R * Math.sin(a);
+  return "M" + cx + " " + cy + "L" + cx + " " + (cy - R) + "A" + R + " " + R + " 0 " + (angle > 180 ? 1 : 0) + " 1 " + x1.toFixed(2) + " " + y1.toFixed(2) + "Z";
+}
+
+/*
+ * Logo-Intro nach BRAND.md. opts: speed (Faktor), onFormAt/onFormAtMs, onDone.
+ * Gibt {skip()} zurück. Klick/Tippen darf überspringen.
+ */
+function playLogoIntro(svg, opts) {
+  opts = opts || {};
+  var sp = opts.speed || 1;
+  var wedge = svg.querySelector(".wedge"), reveal = svg.querySelector(".reveal");
+  var handg = svg.querySelector(".handg"), hand = svg.querySelector(".hand");
+  var sbs = svg.querySelector(".lg-sbs"), num = svg.querySelector(".lg-num"), ring = svg.querySelector(".ring");
+  var finished = false, raf = 0, anims = [], timers = [];
+
+  function finalState() {
+    wedge.setAttribute("d", wedgePath(360));
+    reveal.removeAttribute("mask");
+    handg.setAttribute("opacity", "0");
+    sbs.style.opacity = ""; num.style.opacity = "";
+    ring.setAttribute("opacity", "0");
+  }
+  function end(skipped) {
+    if (finished) return;
+    finished = true;
+    cancelAnimationFrame(raf);
+    timers.forEach(clearTimeout);
+    anims.forEach(function (a) { try { a.cancel(); } catch (e) { /* */ } });
+    finalState();
+    if (opts.onFormAt && !opts._formDone) { opts._formDone = true; opts.onFormAt(skipped); }
+    if (opts.onDone) opts.onDone(skipped);
+  }
+
+  if (reducedMotion()) {
+    // keine Bewegung: nur Überblendung
+    finalState();
+    var fade = svg.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: "ease-out" });
+    anims.push(fade);
+    timers.push(setTimeout(function () { end(false); }, 320));
+    return { skip: function () { end(true); } };
+  }
+
+  sbs.style.opacity = "0"; num.style.opacity = "0";
+  handg.setAttribute("opacity", "1");
+  wedge.setAttribute("d", "");
+
+  var sweepMs = 1100 / sp, t0 = performance.now();
+  function frame(now) {
+    if (finished) return;
+    var t = (now - t0) / sweepMs;
+    var e = EASE_SWEEP(clamp(t, 0, 1));
+    var ang = 360 * e;
+    wedge.setAttribute("d", wedgePath(ang));
+    hand.setAttribute("transform", "rotate(" + ang.toFixed(2) + " " + PIV.x + " " + PIV.y + ")");
+    // Zeiger blendet nach dem Umlauf aus
+    var fadeT = clamp((t - 1) / 0.14, 0, 1);
+    handg.setAttribute("opacity", String(1 - fadeT));
+    if (t < 1.14) raf = requestAnimationFrame(frame);
+    else { reveal.removeAttribute("mask"); handg.setAttribute("opacity", "0"); }
+  }
+  raf = requestAnimationFrame(frame);
+
+  var expoOut = "cubic-bezier(.16,1,.3,1)";
+  function A(node, kf, delay, dur, easing, fill) {
+    var a = node.animate(kf, { duration: dur / sp, delay: delay / sp, easing: easing, fill: fill || "both" });
+    anims.push(a);
+    return a;
+  }
+  A(sbs, [{ opacity: 0, transform: "translateX(-500px)", filter: "blur(28px)" }, { opacity: 1, transform: "translateX(0)", filter: "blur(0px)" }], 1050, 400, expoOut);
+  A(num, [{ opacity: 0, transform: "translate(170px,36px)", filter: "blur(28px)" }, { opacity: 1, transform: "translate(0,0)", filter: "blur(0px)" }], 1400, 400, expoOut);
+  ring.style.transformOrigin = PIV.x + "px " + PIV.y + "px";
+  ring.setAttribute("opacity", "0");
+  A(ring, [{ opacity: 0.4, transform: "scale(.85)" }, { opacity: 0, transform: "scale(1.25)" }], 1750, 700, "ease-out", "forwards");
+
+  if (opts.onFormAt) timers.push(setTimeout(function () { opts._formDone = true; opts.onFormAt(false); }, (opts.formAtMs || 2100) / sp));
+  timers.push(setTimeout(function () { end(false); }, 2600 / sp));
+  return { skip: function () { end(true); } };
+}
+
+// Einfahren von links mit Unschärfe (BRAND: −24 px, 6 px → 0, 380 ms, expo-out)
+function slideIn(node, index) {
+  var reduce = reducedMotion();
+  var kf = reduce
+    ? [{ opacity: 0 }, { opacity: 1 }]
+    : [{ opacity: 0, transform: "translateX(-24px)", filter: "blur(6px)" }, { opacity: 1, transform: "none", filter: "blur(0px)" }];
+  return node.animate(kf, { duration: reduce ? 200 : 380, delay: reduce ? 0 : Math.min(index, 14) * 40, easing: "cubic-bezier(.16,1,.3,1)", fill: "backwards" });
+}
+function animateIn(root) {
+  var items = root.querySelectorAll(".rise");
+  var i = 0;
+  Array.prototype.forEach.call(items, function (n) { slideIn(n, i++); });
+}
+
+/* =====================================================================
+   5. LOGIN / LOGOUT
+   ===================================================================== */
+
+var loginIntro = null;
+
+function playLoginIntro(speed) {
+  var host = $("loginLogo"), form = $("loginForm");
+  var svg = buildLogo(host);
+  form.style.opacity = "0";
+  var shown = false;
+  function showForm() {
+    if (shown) return;
+    shown = true;
+    form.style.opacity = "";
+    form.animate(reducedMotion() ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: "translateY(14px)" }, { opacity: 1, transform: "none" }],
+      { duration: 450, easing: "cubic-bezier(.16,1,.3,1)", fill: "backwards" });
+    try { $("loginPassword").focus({ preventScroll: true }); } catch (e) { /* */ }
+  }
+  loginIntro = playLogoIntro(svg, { speed: speed || 1, formAtMs: 2100, onFormAt: showForm, onDone: function () { loginIntro = null; showForm(); } });
+}
+$("login").addEventListener("pointerdown", function () { if (loginIntro) loginIntro.skip(); });
+
+$("loginForm").addEventListener("submit", function (ev) {
   ev.preventDefault();
-  var msg = document.getElementById("loginMsg");
+  var msg = $("loginMsg");
   msg.textContent = "";
-  var pw = document.getElementById("loginPassword").value;
+  var pw = $("loginPassword").value;
   api("/api/orga/login", { method: "POST", body: { password: pw } }).then(function (data) {
     token = data.token;
-    sessionStorage.setItem("orgaToken", token);
+    try { sessionStorage.setItem("orgaToken", token); } catch (e) { /* */ }
     showApp();
   }).catch(function (err) {
     msg.textContent = "";
@@ -249,26 +1079,89 @@ document.getElementById("loginForm").addEventListener("submit", function (ev) {
 
 function logout(clearSession) {
   token = null;
-  sessionStorage.removeItem("orgaToken");
+  try { sessionStorage.removeItem("orgaToken"); } catch (e) { /* */ }
   stopPolling();
   stopTitleBlink();
-  document.getElementById("app").classList.add("hidden");
-  document.getElementById("login").classList.remove("hidden");
-  if (clearSession !== false) document.getElementById("loginPassword").value = "";
+  closeDrawer();
+  clearPhotos();
+  if ($("checkinDlg").open) $("checkinDlg").close();
+  $("app").classList.add("hidden");
+  $("login").classList.remove("hidden");
+  state.introPlayed = false; knownAlertIds = {}; knownAlertsSeeded = false; renderedAlertIds = {};
+  if (clearSession !== false) $("loginPassword").value = "";
+  playLoginIntro(1.6);
 }
-document.getElementById("logoutBtn").addEventListener("click", function () { logout(true); });
+Array.prototype.forEach.call(document.querySelectorAll(".js-logout"), function (b) {
+  b.addEventListener("click", function () { logout(true); });
+});
 
 function showApp() {
-  document.getElementById("login").classList.add("hidden");
-  document.getElementById("app").classList.remove("hidden");
+  var login = $("login");
+  if (loginIntro) loginIntro.skip();
+  var fade = reducedMotion() ? 120 : 260;
+  login.animate([{ opacity: 1 }, { opacity: 0 }], { duration: fade, easing: "ease-out", fill: "forwards" }).onfinish = function () {
+    login.classList.add("hidden");
+    login.getAnimations().forEach(function (a) { a.cancel(); });
+  };
+  $("app").classList.remove("hidden");
   initMap();
+  buildClockTicks();
+  route(true);
+  // Kurzes Intro: Logo in der Seitenleiste / mobilen Leiste zeichnet sich
+  [$("sideLogo"), $("topLogo")].forEach(function (h) { playLogoIntro(buildLogo(h), { speed: 2 }); });
+  var i = 0;
+  Array.prototype.forEach.call(document.querySelectorAll(".rise-nav"), function (n) { slideIn(n, i++ + 2); });
+  Array.prototype.forEach.call(document.querySelectorAll("#topbar .ev, #topbar .clock, #topbar .top-actions"), function (n) { slideIn(n, 3); });
   refresh().catch(function () {});
   loadEvent().catch(function () {});
   loadRanking().catch(function () {});
   startPolling();
+  startClockTicker();
 }
 
-/* ---------- polling ---------- */
+/* =====================================================================
+   6. ROUTER  (#live, #teams, #ranking, #settings)
+   ===================================================================== */
+
+function currentRoute() {
+  var h = (location.hash || "").replace(/^#/, "");
+  return ROUTES.indexOf(h) >= 0 ? h : "live";
+}
+var shownRoute = null;
+function route(force) {
+  if (!token) return;
+  var r = currentRoute();
+  if (!location.hash || ROUTES.indexOf(location.hash.replace(/^#/, "")) < 0) {
+    try { history.replaceState(null, "", "#" + r); } catch (e) { /* */ }
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-route]"), function (a) {
+    var on = a.getAttribute("data-route") === r;
+    a.classList.toggle("active", on);
+    if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+  });
+  if (r === shownRoute && !force) return;
+  shownRoute = r;
+  Array.prototype.forEach.call(document.querySelectorAll(".view"), function (v) {
+    v.classList.toggle("hidden", v.getAttribute("data-view") !== r);
+  });
+  var view = $("view-" + r);
+  animateIn(view);
+  if (r === "live") onShowLive();
+  if (r === "settings") onShowSettings();
+  if (r !== "teams") closeDrawer();
+  window.scrollTo(0, 0);
+  document.title = (titleBlinkTimer ? document.title : TITLE);
+}
+window.addEventListener("hashchange", function () { route(false); });
+
+function navigate(r) {
+  if (currentRoute() === r) { route(false); return; }
+  location.hash = "#" + r;
+}
+
+/* =====================================================================
+   7. POLLING / REFRESH
+   ===================================================================== */
 
 function startPolling() {
   stopPolling();
@@ -276,41 +1169,131 @@ function startPolling() {
 }
 function stopPolling() {
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  if (clockTimer) { clearInterval(clockTimer); clockTimer = null; }
 }
 
 function refresh() {
+  var btn = $("refreshBtn");
+  btn.classList.add("busy");
   return api("/api/orga/overview").then(function (data) {
-    document.getElementById("stand").textContent = "Stand: " + fmtDateTime(data.server_now);
-    if (data.event && data.event.name) document.getElementById("eventName").textContent = data.event.name;
+    var sn = Date.parse(data.server_now);
+    if (!isNaN(sn)) state.skew = sn - Date.now();
+    state.event = data.event || null;
+    state.teams = data.teams || [];
+    state.alerts = data.alerts || [];
+    state.lastRefresh = data.server_now;
+    var st = $("stand");
+    st.textContent = "Stand: " + fmtTimeSec(data.server_now) + " " + tzAbbr(Date.parse(data.server_now));
+    st.classList.remove("stale");
+    if (data.event && data.event.name) $("eventName").textContent = data.event.name;
     if (data.event && data.event.start_lat != null) setStartMarker(data.event.start_lat, data.event.start_lng);
-    renderAlarms(data.alerts || []);
-    renderTeams(data.teams || []);
-    updateTracks(data.teams || []);
+    renderAll();
+    syncPhotos(state.teams);
+    updateTracks(state.teams);
   }).catch(function (err) {
     if (err.message === "Nicht angemeldet") return;
-    showTransientErr(document.getElementById("alarmsList"), "Verbindung zum Server fehlgeschlagen", err);
-  });
+    $("stand").classList.add("stale");
+    toast("Verbindung zum Server fehlgeschlagen", "net");
+  }).then(function () { btn.classList.remove("busy"); });
+}
+$("refreshBtn").addEventListener("click", function () { refresh().catch(function () {}); });
+
+function renderAll() {
+  renderAlarms(state.alerts);
+  renderKpis();
+  renderTeamList();
+  renderTeamsTable();
+  updateMarkers();
+  updateClock(false);
 }
 
-function showTransientErr(container, text) {
-  var old = container.querySelector(".msg.err[data-net]");
-  if (old) old.remove();
-  var m = el("div", "msg err", text);
-  m.setAttribute("data-net", "1");
-  container.insertBefore(m, container.firstChild);
-  setTimeout(function () { if (m.parentNode) m.remove(); }, 5000);
+/* =====================================================================
+   8. EVENT-UHR (Stoppuhr-Ring in der Kopfleiste)
+   ===================================================================== */
+
+var CLOCK_C = 2 * Math.PI * 22;
+var clockDrawn = false, clockAnimRaf = 0, clockShownP = 0;
+
+function buildClockTicks() {
+  var g = $("clockTicks");
+  if (g.firstChild) return;
+  for (var i = 0; i < 12; i++) {
+    var a = i * 30 * Math.PI / 180;
+    var long = i % 3 === 0;
+    var r1 = 26.5, r2 = long ? 29.5 : 28;
+    var ln = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    ln.setAttribute("x1", (30 + r1 * Math.sin(a)).toFixed(2)); ln.setAttribute("y1", (30 - r1 * Math.cos(a)).toFixed(2));
+    ln.setAttribute("x2", (30 + r2 * Math.sin(a)).toFixed(2)); ln.setAttribute("y2", (30 - r2 * Math.cos(a)).toFixed(2));
+    ln.setAttribute("stroke", long ? "var(--fg-muted)" : "var(--line-strong)");
+    ln.setAttribute("stroke-width", long ? "1.6" : "1");
+    g.appendChild(ln);
+  }
+}
+function setClockRing(p) {
+  clockShownP = p;
+  $("clockArc").setAttribute("stroke-dasharray", CLOCK_C.toFixed(2));
+  $("clockArc").setAttribute("stroke-dashoffset", (CLOCK_C * (1 - p)).toFixed(2));
+  $("clockHand").setAttribute("transform", "rotate(" + (p * 360).toFixed(2) + " 30 30)");
+}
+function sweepClockTo(p) {
+  cancelAnimationFrame(clockAnimRaf);
+  if (reducedMotion()) { setClockRing(p); return; }
+  var t0 = performance.now(), dur = 600;
+  (function step(now) {
+    var t = clamp((now - t0) / dur, 0, 1);
+    setClockRing(p * EASE_SWEEP(t));
+    if (t < 1) clockAnimRaf = requestAnimationFrame(step);
+  })(t0);
+}
+function updateClock(fromTicker) {
+  var ev = state.event;
+  if (!ev || !ev.start_time) return;
+  var start = Date.parse(ev.start_time);
+  var end = ev.end_time ? Date.parse(ev.end_time) : start + ev.duration_h * 3600000;
+  if (isNaN(start) || isNaN(end)) return;
+  var now = nowMs();
+  var phase, label, big, sub, p;
+  if (now < start) {
+    phase = "before"; p = 0;
+    label = "Bis Start"; big = hms(start - now); sub = "Start " + fmtTime(ev.start_time) + " Uhr " + tzAbbr(start);
+  } else if (now < end) {
+    phase = "running"; p = clamp((now - start) / (end - start), 0, 1);
+    label = "Restzeit"; big = hms(end - now); sub = "Seit Start " + hms(now - start);
+  } else {
+    phase = "over"; p = 1;
+    label = "Beendet"; big = hms(now - end); sub = "seit Ende · " + fmtDateTime(ev.end_time || new Date(end).toISOString());
+  }
+  var ph = $("phase");
+  ph.className = "phase " + phase;
+  $("phaseText").textContent = { before: "Vor Start", running: "Läuft", over: "Beendet" }[phase];
+  $("clockLabel").textContent = label;
+  $("clockBig").textContent = big;
+  $("clockSub").textContent = sub;
+  $("clock").classList.toggle("show-txt", false);
+  if (!clockDrawn) { clockDrawn = true; sweepClockTo(p); }
+  else if (Math.abs(p - clockShownP) > 0.0005 || !fromTicker) { if (!clockAnimRaf || clockShownP !== p) setClockRing(p); }
+}
+function startClockTicker() {
+  if (clockTimer) clearInterval(clockTimer);
+  clockTimer = setInterval(function () { updateClock(true); }, 1000);
 }
 
-/* ---------- alarms ---------- */
+/* =====================================================================
+   9. ALARME (global)
+   ===================================================================== */
 
-function renderAlarms(alerts) {
-  var list = document.getElementById("alarmsList");
-  list.textContent = "";
-  var open = alerts.filter(function (a) { return !a.resolved; });
+function openAlerts(alerts) {
+  var open = (alerts || []).filter(function (a) { return !a.resolved; });
   open.sort(function (a, b) {
     var w = function (t) { return t === "sos" ? 0 : 1; };
     return w(a.type) - w(b.type) || String(b.created_at).localeCompare(String(a.created_at));
   });
+  return open;
+}
+
+function renderAlarms(alerts) {
+  var strip = $("alarmStrip");
+  var open = openAlerts(alerts);
 
   var fresh = null;
   open.forEach(function (a) {
@@ -320,37 +1303,48 @@ function renderAlarms(alerts) {
   knownAlertsSeeded = true;
   if (fresh) onNewAlarm();
 
+  // Nav-Badge „Live"
+  Array.prototype.forEach.call(document.querySelectorAll(".js-alarm-badge"), function (b) {
+    b.textContent = String(open.length);
+    b.classList.toggle("hidden", open.length === 0);
+  });
+
+  strip.textContent = "";
   if (!open.length) {
-    list.appendChild(el("span", "muted", "Keine offenen Alarme."));
+    strip.classList.add("hidden");
     stopTitleBlink();
+    renderedAlertIds = {};
     return;
   }
+  strip.classList.remove("hidden");
+  var nextRendered = {};
+  var idx = 0;
   open.forEach(function (a) {
-    var item = el("div", "alert-item " + (a.type === "sos" ? "sos" : "abort"));
+    var isNew = !renderedAlertIds[a.id];
+    nextRendered[a.id] = true;
+    var item = el("div", "alarm " + (a.type === "sos" ? "sos" : "abort"));
+    item.appendChild(el("span", "sig"));
     var meta = el("div", "meta");
-    meta.appendChild(el("strong", null, a.type === "sos" ? "SOS" : "Abbruch"));
-    meta.appendChild(document.createTextNode(" – " + (a.team_name || "Unbekanntes Team")));
+    var title = el("div", "title", (a.type === "sos" ? "SOS" : "Abbruch") + " – " + (a.team_name || "Unbekanntes Team"));
+    meta.appendChild(title);
     meta.appendChild(el("div", "muted", fmtDateTime(a.created_at) + " · Position " +
       (a.lat != null ? a.lat.toFixed(5) + ", " + a.lng.toFixed(5) : "unbekannt")));
     item.appendChild(meta);
 
     var actions = el("div", "actions");
-    var pan = el("button", "btn secondary", "Karte zeigen");
+    var pan = el("button", "btn secondary small", "Auf Karte zeigen");
     pan.type = "button";
-    pan.addEventListener("click", function () {
-      if (map && a.lat != null) map.setView([a.lat, a.lng], 16);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
+    pan.addEventListener("click", function () { showOnMap(a.lat, a.lng, a); });
     actions.appendChild(pan);
     if (a.lat != null) {
-      var link = el("a", "btn link", "OSM");
+      var link = el("a", "link-btn", "OSM");
       link.href = "https://www.openstreetmap.org/?mlat=" + encodeURIComponent(a.lat) +
         "&mlon=" + encodeURIComponent(a.lng) + "#map=17/" + a.lat + "/" + a.lng;
       link.target = "_blank";
       link.rel = "noopener";
       actions.appendChild(link);
     }
-    var done = el("button", "btn", "Erledigt");
+    var done = el("button", "btn small", "Erledigt");
     done.type = "button";
     done.addEventListener("click", function () {
       done.disabled = true;
@@ -358,14 +1352,36 @@ function renderAlarms(alerts) {
         .then(function () { return refresh(); })
         // stopTitleBlink passiert in renderAlarms, falls danach keine offenen Alarme mehr bleiben
         .catch(function (err) {
-          if (err.message !== "Nicht angemeldet") showTransientErr(list, err.message);
+          if (err.message !== "Nicht angemeldet") toast(err.message);
           done.disabled = false;
         });
     });
     actions.appendChild(done);
     item.appendChild(actions);
-    list.appendChild(item);
+    strip.appendChild(item);
+    if (isNew) slideIn(item, idx++);
   });
+  renderedAlertIds = nextRendered;
+}
+
+function showOnMap(lat, lng, a) {
+  var ft = null;
+  if (a) state.teams.forEach(function (t) { if (!ft && ((a.team_id && t.id === a.team_id) || (a.team_name && t.name === a.team_name))) ft = t; });
+  if (ft && teamPosition(ft)) { focusTeam(ft); return; }
+  if (map) enterFree();
+  if (lat != null) state.pendingPan = { lat: lat, lng: lng, zoom: 16 };
+  if (currentRoute() !== "live") { navigate("live"); return; }
+  applyPendingPan();
+  var m = $("map");
+  if (m && m.scrollIntoView) m.scrollIntoView({ behavior: reducedMotion() ? "auto" : "smooth", block: "nearest" });
+}
+function applyPendingPan() {
+  if (!map || !state.pendingPan) return;
+  var p = state.pendingPan;
+  state.pendingPan = null;
+  map.invalidateSize();
+  programmatic(function () { map.setView([p.lat, p.lng], p.zoom || 16, { animate: false }); });
+  if (p.marker) p.marker.openPopup();
 }
 
 function onNewAlarm() {
@@ -392,38 +1408,319 @@ function beep() {
 
 function startTitleBlink() {
   if (titleBlinkTimer) return;
-  var orig = "Orga Dashboard";
   var on = false;
   titleBlinkTimer = setInterval(function () {
-    document.title = on ? orig : "⚠️ ⚠️ ⚠️";
+    document.title = on ? TITLE : "⚠️ ⚠️ ⚠️";
     on = !on;
   }, 1000);
 }
 function stopTitleBlink() {
   if (titleBlinkTimer) { clearInterval(titleBlinkTimer); titleBlinkTimer = null; }
-  document.title = "Orga Dashboard";
+  document.title = TITLE;
 }
 
-/* ---------- map & tracks ---------- */
+/* =====================================================================
+   10. KARTE & SPUREN
+   ===================================================================== */
+
+var OSM_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 function initMap() {
   if (map) return;
   map = L.map("map").setView([48.14, 11.58], 14);
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-  }).addTo(map);
+  map.on("dragstart zoomstart", function () { if (!progFlag) enterFree(); });
+  initMapTools();
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: OSM_ATTR }).addTo(map);
   setTimeout(function () { if (map) map.invalidateSize(); }, 100);
 }
+function onShowLive() {
+  setTimeout(function () {
+    if (!map) return;
+    map.invalidateSize();
+    applyFocus(true);
+    applyPendingPan();
+  }, 30);
+}
 
+function startIcon() {
+  var d = el("div", "mk-start", "S");
+  return L.divIcon({ html: d, className: "", iconSize: [28, 28], iconAnchor: [14, 14] });
+}
 function setStartMarker(lat, lng) {
   if (!map) return;
-  if (startMarker) { startMarker.setLatLng([lat, lng]); return; }
-  startMarker = L.marker([lat, lng], { title: "Start" }).addTo(map)
-    .bindPopup("Startpunkt");
+  if (startMarker) { startMarker.setLatLng([lat, lng]); applyFocus(); return; }
+  startMarker = L.marker([lat, lng], { title: "Start", icon: startIcon() }).addTo(map).bindPopup("Startpunkt");
+  if (!Object.keys(markers).length) programmatic(function () { map.setView([lat, lng], 14, { animate: false }); });
 }
 
 function since6h() {
   return new Date(Date.now() - 6 * 3600 * 1000).toISOString();
+}
+
+/* ---- Teamfotos (per Bearer-Token geladen -> Blob-URLs, pro Team nach photo_updated_at gecacht) ---- */
+
+var photoCache = {};             // teamId -> {ver, url, loading, failedAt}
+var photoRenderTimer = null;
+function teamPhotoMissing(t) { return !t.photo_updated_at; }
+function photoUrl(t) {
+  var c = photoCache[t.id];
+  return t.photo_updated_at && c && c.url ? c.url : null;
+}
+function dropPhoto(id) {
+  var c = photoCache[id];
+  if (c && c.url) URL.revokeObjectURL(c.url);
+  delete photoCache[id];
+}
+function clearPhotos() { Object.keys(photoCache).forEach(dropPhoto); }
+function currentTeam(id) {
+  return state.teams.filter(function (t) { return t.id === id; })[0] || null;
+}
+function schedulePhotoRender() {
+  if (photoRenderTimer) return;
+  photoRenderTimer = setTimeout(function () {
+    photoRenderTimer = null;
+    renderTeamList();
+    renderTeamsTable();
+    updateMarkers();
+    if (state.drawerTeamId) { var t = currentTeam(state.drawerTeamId); if (t) renderDrawerPhoto(t); }
+  }, 60);
+}
+function loadTeamPhoto(t) {
+  var ver = t.photo_updated_at;
+  var c = photoCache[t.id] = photoCache[t.id] || {};
+  c.ver = ver; c.loading = true; c.failedAt = 0;
+  fetch("/api/orga/teams/" + encodeURIComponent(t.id) + "/photo", { headers: { "Authorization": "Bearer " + token } })
+    .then(function (res) {
+      if (res.status === 401) { logout(false); throw new Error("Nicht angemeldet"); }
+      if (!res.ok) throw new Error("Fehler (" + res.status + ")");
+      return res.blob();
+    })
+    .then(function (blob) {
+      var cur = photoCache[t.id];
+      if (!cur || cur.ver !== ver) return;      // inzwischen ersetzt oder zurückgesetzt
+      var old = cur.url;
+      cur.url = URL.createObjectURL(blob);
+      cur.loading = false;
+      if (old) URL.revokeObjectURL(old);
+      schedulePhotoRender();
+    })
+    .catch(function () {
+      var cur = photoCache[t.id];
+      if (cur && cur.ver === ver) { cur.loading = false; cur.failedAt = Date.now(); }
+    });
+}
+// Nach jedem Poll: nur neu laden, wenn sich photo_updated_at geändert hat (Fehlversuche frühestens nach 60 s erneut).
+function syncPhotos(teams) {
+  var ids = {};
+  teams.forEach(function (t) {
+    ids[t.id] = true;
+    var c = photoCache[t.id];
+    if (!t.photo_updated_at) { if (c) { dropPhoto(t.id); schedulePhotoRender(); } return; }
+    if (c && c.ver === t.photo_updated_at) {
+      if (c.loading || c.url || Date.now() - c.failedAt < 60000) return;
+    }
+    loadTeamPhoto(t);
+  });
+  Object.keys(photoCache).forEach(function (id) { if (!ids[id]) dropPhoto(id); });
+}
+function initials(name) {
+  var w = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!w.length) return "?";
+  return (w.length > 1 ? w[0].charAt(0) + w[1].charAt(0) : w[0].slice(0, 2)).toUpperCase();
+}
+function avatarNode(t, cls) {
+  var a = el("span", "avatar" + (cls ? " " + cls : ""));
+  a.style.setProperty("--c", colorForTeam(t.id));
+  var u = photoUrl(t);
+  if (u) a.style.backgroundImage = 'url("' + u + '")';
+  else a.textContent = initials(t.name);
+  return a;
+}
+function noPhotoBadge(host) { host.appendChild(el("span", "badge nophoto", "Teamfoto fehlt")); }
+
+function teamHasSos(t) {
+  return openAlerts(state.alerts).some(function (a) { return a.type === "sos" && a.team_name === t.name; });
+}
+
+function teamIcon(t) {
+  var u = photoUrl(t);
+  var size = u ? 44 : 30;
+  var d = el("div", "pk " + (t.status || "") + (teamHasSos(t) ? " sos" : "") + (u ? "" : " noimg"));
+  d.style.setProperty("--c", colorForTeam(t.id));
+  var face = el("div", "pk-face");
+  if (u) face.style.backgroundImage = 'url("' + u + '")';
+  else face.textContent = initials(t.name);
+  d.appendChild(face);
+  if (t.status === "aborted") d.appendChild(el("span", "pk-st aborted", "\u2715"));
+  else if (t.status === "finished") d.appendChild(el("span", "pk-st finished", "\u2713"));
+  return L.divIcon({ html: d, className: "", iconSize: [size, size], iconAnchor: [size / 2, size / 2], popupAnchor: [0, -size / 2] });
+}
+
+function teamPopup(t) {
+  return function () {
+    var d = el("div");
+    var u = photoUrl(t);
+    if (u) {
+      var img = document.createElement("img");
+      img.className = "pop-photo";
+      img.alt = "Teamfoto " + (t.name || "");
+      img.src = u;
+      d.appendChild(img);
+    }
+    d.appendChild(el("strong", null, t.name));
+    d.appendChild(el("div", "muted", "Letzter Punkt " + minutesAgo(t.minutes_since_last_point)));
+    return d;
+  };
+}
+
+function teamPosition(t) {
+  if (t.last_point && t.last_point.lat != null) return [t.last_point.lat, t.last_point.lng];
+  var c = trackCache[t.id];
+  if (c && c.points && c.points.length) {
+    var l = c.points[c.points.length - 1];
+    if (l.lat != null) return [l.lat, l.lng];
+  }
+  return null;
+}
+
+function updateMarkers() {
+  if (!map) return;
+  var seen = {};
+  state.teams.forEach(function (t) {
+    var pos = teamPosition(t);
+    if (!pos) return;
+    seen[t.id] = true;
+    var m = markers[t.id];
+    if (!m) {
+      m = L.marker(pos, { title: t.name, icon: teamIcon(t) }).addTo(map);
+      m.bindPopup(teamPopup(t));
+      markers[t.id] = m;
+    } else {
+      m.setLatLng(pos);
+      m.setIcon(teamIcon(t));
+      m.unbindPopup();
+      m.bindPopup(teamPopup(t));
+    }
+  });
+  Object.keys(markers).forEach(function (id) {
+    if (!seen[id]) { map.removeLayer(markers[id]); delete markers[id]; }
+  });
+  syncFocusUi();
+  applyFocus();
+}
+/* ---- Karten-Fokus: "all" | "follow" | "start" | "free" (bleibt über Refreshes bestehen) ---- */
+var progFlag = 0;
+var mapFocus = { mode: "all", team: null, prev: { mode: "all", team: null }, sig: "" };
+var FOCUS_KEY = "sbs_map_focus";
+function programmatic(fn) { progFlag++; try { fn(); } finally { progFlag--; } }
+function loadFocus() {
+  try {
+    var o = JSON.parse(localStorage.getItem(FOCUS_KEY) || "null");
+    if (o && ["all", "follow", "start"].indexOf(o.mode) >= 0) {
+      mapFocus.mode = o.mode; mapFocus.team = o.team || null;
+      if (mapFocus.mode === "follow" && !mapFocus.team) mapFocus.mode = "all";
+    }
+  } catch (e) { /* */ }
+  mapFocus.prev = { mode: mapFocus.mode, team: mapFocus.team };
+}
+function saveFocus() {
+  try {
+    var m = mapFocus.mode === "free" ? mapFocus.prev : mapFocus;
+    localStorage.setItem(FOCUS_KEY, JSON.stringify({ mode: m.mode, team: m.team }));
+  } catch (e) { /* */ }
+}
+function setFocus(mode, teamId) {
+  mapFocus.mode = mode;
+  mapFocus.team = mode === "follow" ? teamId : null;
+  if (mode !== "free") mapFocus.prev = { mode: mapFocus.mode, team: mapFocus.team };
+  mapFocus.sig = "";
+  saveFocus();
+  syncFocusUi();
+  applyFocus(true);
+}
+function enterFree() {
+  if (mapFocus.mode === "free") return;
+  mapFocus.prev = { mode: mapFocus.mode, team: mapFocus.team };
+  mapFocus.mode = "free";
+  syncFocusUi();
+}
+function teamById(id) {
+  for (var i = 0; i < state.teams.length; i++) if (state.teams[i].id === id) return state.teams[i];
+  return null;
+}
+var teamOptKey = "";
+function syncFocusUi() {
+  if (!$("mfAll")) return;
+  var m = mapFocus.mode;
+  $("mfAll").className = "btn small" + (m === "all" ? "" : " secondary");
+  $("mfStart").className = "btn small" + (m === "start" ? "" : " secondary");
+  var sel = $("mfTeam");
+  var key = state.teams.map(function (t) { return t.id + "\u0001" + t.name; }).join("\u0002");
+  if (key !== teamOptKey) {
+    teamOptKey = key;
+    sel.textContent = "";
+    var o0 = el("option", null, "Team folgen …"); o0.value = ""; sel.appendChild(o0);
+    state.teams.forEach(function (t) { var o = el("option", null, t.name); o.value = t.id; sel.appendChild(o); });
+  }
+  sel.value = m === "follow" && mapFocus.team ? mapFocus.team : "";
+  sel.classList.toggle("on", m === "follow");
+  var chip = $("mfChip");
+  var t = m === "follow" ? teamById(mapFocus.team) : null;
+  chip.hidden = !t;
+  if (t) $("mfChipText").textContent = "Folgt: " + t.name;
+  $("mfResume").hidden = m !== "free";
+}
+function initMapTools() {
+  loadFocus();
+  $("mfAll").addEventListener("click", function () { setFocus("all"); });
+  $("mfStart").addEventListener("click", function () { setFocus("start"); });
+  $("mfChipX").addEventListener("click", function () { setFocus("all"); });
+  $("mfTeam").addEventListener("change", function () {
+    if (this.value) setFocus("follow", this.value); else setFocus("all");
+  });
+  $("mfResume").addEventListener("click", function () { setFocus(mapFocus.prev.mode, mapFocus.prev.team); });
+  syncFocusUi();
+}
+// Wendet den gewählten Fokus an. force = auch ohne geänderte Positionen neu ausrichten.
+function applyFocus(force) {
+  if (!map || mapFocus.mode === "free") return;
+  var sz = map.getSize();
+  if (sz.x < 50 || sz.y < 50) return; // Karte unsichtbar – später (onShowLive) erneut
+  var sig, pts = [], pos;
+  if (mapFocus.mode === "follow") {
+    var t = teamById(mapFocus.team);
+    if (!t && state.teams.length) { setFocus("all"); return; }
+    pos = t ? teamPosition(t) : null;
+    if (!pos) return;
+    sig = "f" + pos[0] + "," + pos[1];
+  } else if (mapFocus.mode === "start") {
+    if (!startMarker) return;
+    var sl = startMarker.getLatLng();
+    sig = "s" + sl.lat + "," + sl.lng;
+  } else {
+    Object.keys(markers).forEach(function (id) { var l = markers[id].getLatLng(); pts.push(l); });
+    if (startMarker) pts.push(startMarker.getLatLng());
+    if (!pts.length) return;
+    sig = "a" + pts.map(function (l) { return l.lat + "," + l.lng; }).join(";");
+  }
+  if (!force && sig === mapFocus.sig) return;
+  var first = !mapFocus.sig;
+  mapFocus.sig = sig;
+  programmatic(function () {
+    try {
+      if (mapFocus.mode === "follow") {
+        var z = (force || first) ? Math.max(map.getZoom(), 16) : map.getZoom();
+        map.setView(pos, z, { animate: false });
+      } else if (mapFocus.mode === "start") {
+        var ll = startMarker.getLatLng();
+        map.setView(ll, Math.max(map.getZoom(), 15), { animate: false });
+      } else if (pts.length === 1) {
+        map.setView(pts[0], 16, { animate: false });
+      } else {
+        map.fitBounds(L.latLngBounds(pts), { padding: [60, 60], maxZoom: 16, animate: false });
+      }
+    } catch (e) { /* */ }
+  });
 }
 
 function updateTracks(teams) {
@@ -437,25 +1734,14 @@ function updateTracks(teams) {
         var color = colorForTeam(t.id);
         var cache = trackCache[t.id];
         if (cache && cache.layer) map.removeLayer(cache.layer);
-        if (cache && cache.marker) map.removeLayer(cache.marker);
         var latlngs = pts.filter(function (p) { return p.lat != null && p.lng != null; })
           .map(function (p) { return [p.lat, p.lng]; });
         var layer = null;
         if (latlngs.length > 1) {
-          layer = L.polyline(latlngs, { color: color, weight: 3, opacity: 0.8 }).addTo(map);
+          layer = L.polyline(latlngs, { color: color, weight: 3, opacity: 0.85 }).addTo(map);
         }
-        var marker = null;
-        var last = pts.length ? pts[pts.length - 1] : null;
-        if (last && last.lat != null) {
-          marker = L.marker([last.lat, last.lng], { title: t.name }).addTo(map);
-          marker.bindPopup(function () {
-            var d = el("div");
-            d.appendChild(el("strong", null, t.name));
-            d.appendChild(el("div", "muted", "Letzter Punkt " + minutesAgo(t.minutes_since_last_point)));
-            return d;
-          });
-        }
-        trackCache[t.id] = { points: pts, layer: layer, marker: marker, color: color };
+        trackCache[t.id] = { points: pts, layer: layer, color: color };
+        updateMarkers();
       })
       .catch(function (err) {
         if (err.message !== "Nicht angemeldet" && err.status !== 404) { /* keep old track */ }
@@ -463,27 +1749,146 @@ function updateTracks(teams) {
   });
 }
 
-/* ---------- teams ---------- */
+function focusTeam(t) {
+  var pos = teamPosition(t);
+  if (!pos) { toast("Für dieses Team liegt noch keine Position vor."); return; }
+  state.pendingPan = { lat: pos[0], lng: pos[1], zoom: Math.max(map ? map.getZoom() : 0, 16), marker: markers[t.id] };
+  if (map) setFocus("follow", t.id); else { mapFocus.mode = "follow"; mapFocus.team = t.id; mapFocus.prev = { mode: "follow", team: t.id }; saveFocus(); }
+  if (currentRoute() !== "live") { navigate("live"); return; }
+  applyPendingPan();
+  var m = $("map");
+  if (m && m.scrollIntoView) m.scrollIntoView({ behavior: reducedMotion() ? "auto" : "smooth", block: "nearest" });
+}
 
-function renderTeams(teams) {
-  var body = document.getElementById("teamsBody");
-  body.textContent = "";
+/* =====================================================================
+   11. VIEW: LIVE  (KPIs + Teamliste)
+   ===================================================================== */
+
+function setKpi(id, value, cls) {
+  var k = $(id);
+  k.querySelector(".val").textContent = String(value);
+  k.classList.remove("signal", "warn", "ok", "pulse");
+  if (cls) cls.split(" ").forEach(function (c) { k.classList.add(c); });
+}
+function renderKpis() {
+  var teams = state.teams;
+  var cnt = function (s) { return teams.filter(function (t) { return t.status === s; }).length; };
+  var hints = teams.filter(function (t) { var h = t.hints || {}; return h.silent || h.checkin_overdue || h.speeding; }).length;
+  var overdue = teams.filter(function (t) { return t.hints && t.hints.checkin_overdue; }).length;
+  var open = openAlerts(state.alerts).length;
+  setKpi("kpiActive", cnt("active"), "ok");
+  setKpi("kpiAborted", cnt("aborted"), cnt("aborted") ? "warn" : "");
+  setKpi("kpiFinished", cnt("finished"), "");
+  setKpi("kpiAlarms", open, open ? "signal pulse" : "");
+  setKpi("kpiHints", hints, hints ? "warn" : "");
+  setKpi("kpiOverdue", overdue, overdue ? "signal" : "");
+  // Vor Eventstart ist ein fehlendes Teamfoto dringend (signal), danach nur noch ein Hinweis (warn).
+  var noPhoto = teams.filter(teamPhotoMissing).length;
+  var started = state.event && state.event.start_time && Date.parse(state.event.start_time) <= nowMs();
+  setKpi("kpiNoPhoto", noPhoto, noPhoto ? (started ? "warn" : "signal") : "");
+}
+
+function hintBadges(t, host) {
+  var h = t.hints || {};
+  if (h.silent) host.appendChild(el("span", "badge silent", "Still"));
+  if (h.checkin_overdue) host.appendChild(el("span", "badge overdue", "Check-in überfällig"));
+  if (h.speeding) host.appendChild(el("span", "badge speed", "Geschwindigkeit auffällig"));
+  return !!(h.silent || h.checkin_overdue || h.speeding);
+}
+function statusLabel(s) {
+  return { active: "aktiv", aborted: "abgebrochen", finished: "im Ziel" }[s] || s;
+}
+function batteryNode(t) {
+  var n = el("span", null, t.battery != null ? Math.round(t.battery) + " %" : "–");
+  if (t.battery != null && t.battery < 20) n.className = "battery low";
+  return n;
+}
+
+function renderTeamList() {
+  var host = $("teamList");
+  host.textContent = "";
+  var teams = state.teams.slice();
+  var weight = function (t) { return teamHasSos(t) ? 0 : (t.hints && (t.hints.silent || t.hints.checkin_overdue || t.hints.speeding)) ? 1 : 2; };
+  teams.sort(function (a, b) { return weight(a) - weight(b) || String(a.name).localeCompare(String(b.name), "de"); });
+  $("teamListCount").textContent = teams.length ? teams.length + " Teams" : "";
+  if (!teams.length) { host.appendChild(el("div", "empty", "Noch keine Teams angelegt.")); return; }
   teams.forEach(function (t) {
+    var b = el("button", "tl-item" + (teamHasSos(t) ? " sos" : ""));
+    b.type = "button";
+    b.appendChild(el("span", "dot " + (t.status || "")));
+    b.appendChild(avatarNode(t));
+    b.appendChild(el("div", "nm", t.name || ""));
+    var sub = el("div", "sub");
+    sub.appendChild(el("span", null, statusLabel(t.status)));
+    sub.appendChild(el("span", null, minutesAgo(t.minutes_since_last_point)));
+    var bat = el("span"); bat.appendChild(document.createTextNode("Akku ")); bat.appendChild(batteryNode(t));
+    sub.appendChild(bat);
+    b.appendChild(sub);
+    var badges = el("div", "badges");
+    var anyBadge = hintBadges(t, badges);
+    if (teamPhotoMissing(t)) { noPhotoBadge(badges); anyBadge = true; }
+    if (anyBadge) b.appendChild(badges);
+    b.addEventListener("click", function () { focusTeam(t); });
+    host.appendChild(b);
+  });
+}
+
+/* =====================================================================
+   12. VIEW: TEAMS
+   ===================================================================== */
+
+var FILTERS = [
+  { id: "all", label: "Alle" }, { id: "active", label: "Aktiv" }, { id: "aborted", label: "Abgebrochen" },
+  { id: "finished", label: "Im Ziel" }, { id: "hints", label: "Mit Hinweisen" }
+];
+function teamHasHints(t) { var h = t.hints || {}; return !!(h.silent || h.checkin_overdue || h.speeding); }
+function matchesFilter(t) {
+  var f = state.teamFilter;
+  if (f === "hints") { if (!teamHasHints(t)) return false; }
+  else if (f !== "all" && t.status !== f) return false;
+  var q = state.teamQuery.trim().toLowerCase();
+  if (q && String(t.name || "").toLowerCase().indexOf(q) < 0 && String(t.code || "").toLowerCase().indexOf(q) < 0) return false;
+  return true;
+}
+function renderChips() {
+  var host = $("teamChips");
+  host.textContent = "";
+  FILTERS.forEach(function (f) {
+    var n = state.teams.filter(function (t) { return f.id === "all" ? true : f.id === "hints" ? teamHasHints(t) : t.status === f.id; }).length;
+    var c = el("button", "chip", f.label);
+    c.type = "button";
+    c.setAttribute("aria-pressed", state.teamFilter === f.id ? "true" : "false");
+    c.appendChild(el("span", "n", String(n)));
+    c.addEventListener("click", function () { state.teamFilter = f.id; renderChips(); renderTeamsTable(); });
+    host.appendChild(c);
+  });
+}
+$("teamSearch").addEventListener("input", function (e) { state.teamQuery = e.target.value; renderTeamsTable(); });
+
+function renderTeamsTable() {
+  renderChips();
+  var body = $("teamsBody");
+  body.textContent = "";
+  var list = state.teams.filter(matchesFilter);
+  $("teamsEmpty").classList.toggle("hidden", list.length > 0);
+  list.forEach(function (t) {
     var tr = el("tr", "teamrow");
-    tr.appendChild(el("td", null, t.name || ""));
-    tr.appendChild(el("td", null, t.code || ""));
-    var st = el("td");
-    var statusText = { active: "aktiv", aborted: "abgebrochen", finished: "im Ziel" }[t.status] || t.status;
-    var span = el("span", "status-" + (t.status || ""), statusText);
-    st.appendChild(span);
+    var nameTd = el("td", "name");
+    var nmCell = el("div", "nm-cell");
+    nmCell.appendChild(avatarNode(t, "sm"));
+    nmCell.appendChild(el("span", null, t.name || ""));
+    nameTd.appendChild(nmCell);
+    tr.appendChild(nameTd);
+    tr.appendChild(el("td", "code hide-sm", t.code || ""));
+    var st = el("td", "c-status");
+    var sw = el("span", "status-text " + (t.status || ""));
+    sw.appendChild(el("span", "dot " + (t.status || "")));
+    sw.appendChild(document.createTextNode(" " + statusLabel(t.status)));
+    st.appendChild(sw);
     tr.appendChild(st);
-    tr.appendChild(el("td", null, minutesAgo(t.minutes_since_last_point)));
-    var batt = el("td");
-    var battVal = t.battery != null ? Math.round(t.battery) + " %" : "–";
-    if (t.battery != null && t.battery < 20) batt.className = "battery low";
-    batt.textContent = battVal;
-    tr.appendChild(batt);
-    var ci = el("td");
+    tr.appendChild(el("td", "c-ago", minutesAgo(t.minutes_since_last_point)));
+    var batt = el("td", "c-batt"); batt.appendChild(batteryNode(t)); tr.appendChild(batt);
+    var ci = el("td", "hide-sm");
     if (t.last_checkin) {
       ci.appendChild(el("div", null, "Slot " + t.last_checkin.slot));
       ci.appendChild(el("div", "muted", fmtTime(t.last_checkin.captured_at) + " · " + (t.last_checkin.participant_name || "")));
@@ -491,57 +1896,158 @@ function renderTeams(teams) {
       ci.textContent = "–";
     }
     tr.appendChild(ci);
-    var hintTd = el("td");
-    var h = t.hints || {};
-    if (h.silent) hintTd.appendChild(el("span", "badge silent", "Still"));
-    if (h.checkin_overdue) hintTd.appendChild(el("span", "badge overdue", "Check-in überfällig"));
-    if (h.speeding) hintTd.appendChild(el("span", "badge speed", "Geschwindigkeit auffällig"));
-    if (!h.silent && !h.checkin_overdue && !h.speeding) hintTd.appendChild(el("span", "muted", "–"));
+    var hintTd = el("td", "c-hints");
+    var anyHint = hintBadges(t, hintTd);
+    if (teamPhotoMissing(t)) { noPhotoBadge(hintTd); anyHint = true; }
+    if (!anyHint) hintTd.appendChild(el("span", "muted", "–"));
     tr.appendChild(hintTd);
-    var act = el("td");
-    var detailsBtn = el("button", "btn secondary", "Details");
+    var act = el("td", "c-act");
+    var actWrap = el("div", "row-actions");
+    var detailsBtn = el("button", "btn secondary small", "Details");
     detailsBtn.type = "button";
-    var ciBtn = el("button", "btn secondary", "Check-ins");
+    var ciBtn = el("button", "btn secondary small", "Check-ins");
     ciBtn.type = "button";
     ciBtn.addEventListener("click", function (ev) { ev.stopPropagation(); openCheckins(t); });
-    act.appendChild(detailsBtn);
-    act.appendChild(document.createTextNode(" "));
-    act.appendChild(ciBtn);
+    detailsBtn.addEventListener("click", function (ev) { ev.stopPropagation(); openDrawer(t); });
+    actWrap.appendChild(detailsBtn);
+    actWrap.appendChild(ciBtn);
+    act.appendChild(actWrap);
     tr.appendChild(act);
+    tr.addEventListener("click", function () { openDrawer(t); });
     body.appendChild(tr);
-
-    var detRow = el("tr", "details-row hidden");
-    var detCell = el("td");
-    detCell.colSpan = 8;
-    detRow.appendChild(detCell);
-    body.appendChild(detRow);
-
-    detailsBtn.addEventListener("click", function () {
-      var hidden = detRow.classList.toggle("hidden");
-      if (!hidden) loadTeamDetails(t, detCell);
-    });
   });
 }
 
+/* ---- Details-Drawer ---- */
+
+function dfield(label, node) {
+  var d = el("div");
+  d.appendChild(el("div", "label", label));
+  var v = el("div", "v");
+  if (typeof node === "string") v.textContent = node; else v.appendChild(node);
+  d.appendChild(v);
+  return d;
+}
+function openDrawer(t) {
+  state.drawerTeamId = t.id;
+  var drawer = $("drawer"), body = $("drawerBody");
+  $("drawerTitle").textContent = t.name || "Team";
+  body.textContent = "";
+
+  var sw = el("span", "status-text " + (t.status || ""));
+  sw.appendChild(el("span", "dot " + (t.status || "")));
+  sw.appendChild(document.createTextNode(" " + statusLabel(t.status)));
+  body.appendChild(sw);
+
+  var photoHost = el("div", "dphoto");
+  photoHost.id = "drawerPhoto";
+  body.appendChild(photoHost);
+  renderDrawerPhoto(t);
+
+  var grid = el("div", "dgrid");
+  grid.appendChild(dfield("Code", el("span", "num", t.code || "–")));
+  grid.appendChild(dfield("Batterie", batteryNode(t)));
+  grid.appendChild(dfield("Letzter Punkt", minutesAgo(t.minutes_since_last_point)));
+  grid.appendChild(dfield("Letzter Check-in", t.last_checkin
+    ? "Slot " + t.last_checkin.slot + " · " + fmtTime(t.last_checkin.captured_at) + " · " + (t.last_checkin.participant_name || "")
+    : "–"));
+  var hv = el("div");
+  if (!hintBadges(t, hv)) hv.textContent = "–";
+  grid.appendChild(dfield("Hinweise", hv));
+  body.appendChild(grid);
+
+  var acts = el("div");
+  acts.style.display = "flex"; acts.style.gap = "10px"; acts.style.flexWrap = "wrap";
+  var ci = el("button", "btn secondary small", "Check-ins"); ci.type = "button";
+  ci.addEventListener("click", function () { openCheckins(t); });
+  var mp = el("button", "btn secondary small", "Auf Karte zeigen"); mp.type = "button";
+  mp.addEventListener("click", function () { closeDrawer(); focusTeam(t); });
+  acts.appendChild(ci); acts.appendChild(mp);
+  body.appendChild(acts);
+
+  var sec = el("div", "dsection");
+  var cell = el("div");
+  sec.appendChild(cell);
+  body.appendChild(sec);
+  loadTeamDetails(t, cell);
+
+  drawer.classList.remove("hidden");
+  var panel = drawer.querySelector(".panel");
+  if (reducedMotion()) panel.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160 });
+  else {
+    panel.animate([{ transform: "translateX(40px)", opacity: 0, filter: "blur(6px)" }, { transform: "none", opacity: 1, filter: "blur(0)" }], { duration: 380, easing: "cubic-bezier(.16,1,.3,1)" });
+    drawer.querySelector(".scrim").animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250 });
+  }
+  $("drawerClose").focus();
+}
+function renderDrawerPhoto(t) {
+  var host = $("drawerPhoto");
+  if (!host) return;
+  host.textContent = "";
+  var frame = el("div", "frame");
+  var u = photoUrl(t);
+  if (u) {
+    var img = document.createElement("img");
+    img.alt = "Teamfoto " + (t.name || "");
+    img.src = u;
+    frame.appendChild(img);
+  } else {
+    frame.appendChild(el("span", "muted", teamPhotoMissing(t) ? "Noch kein Teamfoto aufgenommen." : "Teamfoto wird geladen …"));
+  }
+  host.appendChild(frame);
+  var acts = el("div", "dp-actions");
+  if (teamPhotoMissing(t)) {
+    noPhotoBadge(acts);
+  } else {
+    var reset = el("button", "btn secondary small", "Foto zurücksetzen");
+    reset.type = "button";
+    reset.addEventListener("click", function () {
+      if (!confirm("Teamfoto von „" + (t.name || "") + "“ zurücksetzen? Das Team muss ein neues Foto aufnehmen.")) return;
+      reset.disabled = true;
+      api("/api/orga/teams/" + encodeURIComponent(t.id) + "/photo", { method: "DELETE" })
+        .then(function () { return refresh(); })
+        .then(function () { var cur = currentTeam(t.id); if (cur && state.drawerTeamId === t.id) renderDrawerPhoto(cur); })
+        .catch(function (err) {
+          if (err.message === "Nicht angemeldet") return;
+          reset.disabled = false;
+          toast("Foto konnte nicht zurückgesetzt werden: " + err.message);
+        });
+    });
+    acts.appendChild(reset);
+    acts.appendChild(el("span", "muted", "Erzwingt eine neue Aufnahme durch das Team."));
+  }
+  host.appendChild(acts);
+}
+function closeDrawer() {
+  state.drawerTeamId = null;
+  $("drawer").classList.add("hidden");
+}
+$("drawerClose").addEventListener("click", closeDrawer);
+$("drawerScrim").addEventListener("click", closeDrawer);
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape" && !$("drawer").classList.contains("hidden") && !$("checkinDlg").open) closeDrawer();
+});
+
 function loadTeamDetails(t, cell) {
   cell.textContent = "";
-  var head = el("div", null, "Lade …");
-  cell.appendChild(head);
+  cell.appendChild(el("div", "muted", "Lade …"));
   api("/api/orga/teams").then(function (data) {
     var team = (data.teams || []).find(function (x) { return String(x.id) === String(t.id); });
     cell.textContent = "";
     if (!team) { cell.appendChild(el("span", "muted", "Team nicht gefunden.")); return; }
     var wrap = el("div");
-    wrap.appendChild(el("strong", null, "Teilnehmer (" + (team.participants || []).length + ")"));
-    var ul = el("ul", "participants");
+    var h = el("h3", null, "Teilnehmer (" + (team.participants || []).length + ")");
+    wrap.appendChild(h);
+    var ul = el("ul", "plist");
     if (!(team.participants || []).length) ul.appendChild(el("li", "muted", "Keine Teilnehmer."));
     (team.participants || []).forEach(function (p) {
       var li = el("li");
-      li.appendChild(document.createTextNode((p.display_name || "") + " · seit " + fmtDateTime(p.joined_at) + " "));
-      var rm = el("button", "btn danger", "Entfernen");
+      var info = el("div");
+      info.appendChild(el("div", "pn", p.display_name || ""));
+      info.appendChild(el("div", "muted", "seit " + fmtDateTime(p.joined_at)));
+      li.appendChild(info);
+      var rm = el("button", "btn danger small", "Entfernen");
       rm.type = "button";
-      rm.style.fontSize = "11px";
-      rm.style.padding = "2px 8px";
       rm.addEventListener("click", function () {
         if (!confirm("Teilnehmer „" + p.display_name + "“ wirklich entfernen?")) return;
         api("/api/orga/teams/" + encodeURIComponent(team.id) + "/participants/" + encodeURIComponent(p.id), { method: "DELETE" })
@@ -566,41 +2072,72 @@ function loadTeamDetails(t, cell) {
   });
 }
 
-/* ---------- team creation ---------- */
+/* ---- Team anlegen ---- */
 
-document.getElementById("createTeamBtn").addEventListener("click", function () {
-  var msg = document.getElementById("createTeamMsg");
-  var box = document.getElementById("newTeamBox");
+$("createTeamBtn").addEventListener("click", createTeam);
+$("newTeamName").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); createTeam(); } });
+var copyIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></svg>';
+function createTeam() {
+  var msg = $("createTeamMsg");
+  var box = $("newTeamBox");
   msg.textContent = "";
-  var name = document.getElementById("newTeamName").value.trim();
+  var name = $("newTeamName").value.trim();
   if (!name) { msg.appendChild(el("div", "msg err", "Bitte einen Team-Namen eingeben.")); return; }
   api("/api/orga/teams", { method: "POST", body: { name: name } }).then(function (data) {
-    document.getElementById("newTeamName").value = "";
+    $("newTeamName").value = "";
     box.textContent = "";
     var b = el("div", "newteam");
-    b.appendChild(el("strong", null, "Team „" + name + "“ angelegt. Code für das Team:"));
-    b.appendChild(el("div", "code", data.code || "–"));
+    var info = el("div", "info");
+    info.appendChild(el("div", "label", "Neuer Team-Code"));
+    info.appendChild(el("div", "muted", "Team „" + name + "“ angelegt. Code für das Team:"));
+    b.appendChild(info);
+    var code = data.code || "–";
+    b.appendChild(el("div", "code", code));
+    var cp = el("button", "btn secondary small");
+    cp.type = "button";
+    cp.appendChild(svgFromString(copyIcon));
+    var lbl = el("span", null, "Kopieren");
+    cp.appendChild(lbl);
+    cp.addEventListener("click", function () {
+      var done = function () { lbl.textContent = "Kopiert"; setTimeout(function () { lbl.textContent = "Kopieren"; }, 1800); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(done).catch(function () { fallbackCopy(code); done(); });
+      } else { fallbackCopy(code); done(); }
+    });
+    b.appendChild(cp);
     box.appendChild(b);
+    slideIn(b, 0);
     refresh().catch(function () {});
   }).catch(function (err) {
     if (err.message !== "Nicht angemeldet") msg.appendChild(el("div", "msg err", err.message));
   });
-});
+}
+function fallbackCopy(text) {
+  try {
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove();
+  } catch (e) { /* */ }
+}
 
-/* ---------- check-ins ---------- */
+/* =====================================================================
+   13. CHECK-INS (Dialog)
+   ===================================================================== */
 
-var checkinDlg = document.getElementById("checkinDlg");
+var checkinDlg = $("checkinDlg");
 var mediaUrls = [];
 function revokeMedia() {
   mediaUrls.forEach(function (u) { URL.revokeObjectURL(u); });
   mediaUrls = [];
 }
-document.getElementById("checkinClose").addEventListener("click", function () { checkinDlg.close(); revokeMedia(); });
+$("checkinClose").addEventListener("click", function () { checkinDlg.close(); });
+checkinDlg.addEventListener("close", revokeMedia);
+checkinDlg.addEventListener("click", function (e) { if (e.target === checkinDlg) checkinDlg.close(); });
 
 function openCheckins(team) {
   checkinDlg.showModal();
-  document.getElementById("checkinTitle").textContent = "Check-ins – " + (team.name || "");
-  var content = document.getElementById("checkinContent");
+  $("checkinTitle").textContent = "Check-ins – " + (team.name || "");
+  var content = $("checkinContent");
   content.textContent = "";
   content.appendChild(el("span", "muted", "Lade …"));
   revokeMedia();
@@ -613,7 +2150,10 @@ function openCheckins(team) {
       var card = el("div", "checkin");
       var holder = el("div");
       card.appendChild(holder);
-      card.appendChild(el("div", "cap", "Slot " + c.slot + " · " + fmtDateTime(c.captured_at) + " · " + (c.participant_name || "")));
+      var cap = el("div", "cap");
+      cap.appendChild(el("b", null, "Slot " + c.slot));
+      cap.appendChild(document.createTextNode(" · " + fmtDateTime(c.captured_at) + " · " + (c.participant_name || "")));
+      card.appendChild(cap);
       loadMedia(holder, c);
       strip.appendChild(card);
     });
@@ -656,7 +2196,9 @@ function loadMedia(holder, c) {
     });
 }
 
-/* ---------- ranking ---------- */
+/* =====================================================================
+   14. VIEW: RANGLISTE
+   ===================================================================== */
 
 function loadRanking() {
   return api("/api/orga/ranking").then(renderRanking).catch(function (err) {
@@ -665,33 +2207,58 @@ function loadRanking() {
   });
 }
 function renderRanking(data) {
-  var box = document.getElementById("rankBox");
+  var box = $("rankBox");
   box.textContent = "";
   if (data.computed_at == null || !(data.entries || []).length) {
     box.appendChild(el("div", "muted", "Noch keine Rangliste berechnet."));
     return;
   }
+  var entries = data.entries || [];
   var wrap = el("div");
-  wrap.appendChild(el("div", "muted", "Berechnet: " + fmtDateTime(data.computed_at) + (data.is_final ? " · ENDWERTUNG" : "")));
-  var table = el("table");
+  var meta = el("div", "label", "Berechnet: " + fmtDateTime(data.computed_at) + (data.is_final ? " · ENDWERTUNG" : ""));
+  wrap.appendChild(meta);
+
+  // Podium: Platz 2 · 1 · 3
+  var top = entries.slice(0, 3);
+  if (top.length) {
+    var pod = el("div", "podium");
+    var order = top.length === 3 ? [1, 0, 2] : top.map(function (_, i) { return i; });
+    order.forEach(function (i) {
+      var e = top[i];
+      var p = el("div", "pod p" + (i + 1));
+      var ticksRow = el("span", "ticks tickrow");
+      for (var k = 0; k < 4 - i; k++) ticksRow.appendChild(el("i"));
+      p.appendChild(ticksRow);
+      p.appendChild(el("div", "rk num", String(e.rank)));
+      p.appendChild(el("div", "tn", e.team_name || ""));
+      p.appendChild(el("div", "km num", e.distance_km != null ? Number(e.distance_km).toFixed(2) + " km" : "–"));
+      pod.appendChild(p);
+    });
+    wrap.appendChild(pod);
+  }
+
+  var card = el("div", "card");
+  var tw = el("div", "table-wrap");
+  var table = el("table", "ranking");
   var thead = el("thead");
   var hr = el("tr");
   ["Platz", "Team", "Distanz (km)"].forEach(function (h) { hr.appendChild(el("th", null, h)); });
   thead.appendChild(hr); table.appendChild(thead);
   var tbody = el("tbody");
-  (data.entries || []).forEach(function (e) {
+  entries.forEach(function (e) {
     var tr = el("tr");
-    tr.appendChild(el("td", null, String(e.rank)));
-    tr.appendChild(el("td", null, e.team_name || ""));
-    tr.appendChild(el("td", null, e.distance_km != null ? Number(e.distance_km).toFixed(2) : "–"));
+    tr.appendChild(el("td", "rk", String(e.rank)));
+    tr.appendChild(el("td", "name", e.team_name || ""));
+    tr.appendChild(el("td", "num", e.distance_km != null ? Number(e.distance_km).toFixed(2) : "–"));
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
-  wrap.appendChild(table);
+  tw.appendChild(table); card.appendChild(tw); wrap.appendChild(card);
   box.appendChild(wrap);
+  Array.prototype.forEach.call(wrap.querySelectorAll(".pod, .card"), function (n, i) { slideIn(n, i); });
 }
 function calcRanking(final) {
-  var msg = document.getElementById("rankMsg");
+  var msg = $("rankMsg");
   msg.textContent = "";
   api("/api/orga/ranking?final=" + (final ? "true" : "false"), { method: "POST" }).then(function (data) {
     renderRanking(data);
@@ -700,28 +2267,49 @@ function calcRanking(final) {
     if (err.message !== "Nicht angemeldet") msg.appendChild(el("div", "msg err", err.message));
   });
 }
-document.getElementById("rankCalcBtn").addEventListener("click", function () { calcRanking(false); });
-document.getElementById("rankFinalBtn").addEventListener("click", function () { calcRanking(true); });
+$("rankCalcBtn").addEventListener("click", function () { calcRanking(false); });
+$("rankFinalBtn").addEventListener("click", function () { calcRanking(true); });
 
-/* ---------- event settings ---------- */
+/* =====================================================================
+   15. VIEW: EINSTELLUNGEN
+   ===================================================================== */
 
 var EVENT_FIELDS = ["name", "start_lat", "start_lng", "reveal_time", "start_time", "duration_h",
   "checkin_interval_min", "checkin_window_min", "silence_alarm_min", "speed_flag_kmh", "orga_phone"];
 
-function pad2(n) {
-  return String(n).length < 2 ? "0" + n : String(n);
+var BERLIN_DTF = new Intl.DateTimeFormat("en-GB", {
+  timeZone: TZ, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit",
+  hour: "2-digit", minute: "2-digit", second: "2-digit"
+});
+// Berlin-Wanduhr eines Zeitpunkts als "UTC-Millisekunden" (Jahr…Sekunde der Berliner Uhr)
+function berlinWallAsUtcMs(ms) {
+  var o = {};
+  BERLIN_DTF.formatToParts(new Date(ms)).forEach(function (p) { o[p.type] = p.value; });
+  return Date.UTC(+o.year, +o.month - 1, +o.day, +o.hour % 24, +o.minute, +o.second);
 }
-function utcToLocalInputValue(iso) {
+function berlinOffsetMs(ms) { return berlinWallAsUtcMs(ms) - Math.floor(ms / 1000) * 1000; }
+function utcToBerlinInputValue(iso) {
   var d = new Date(iso);
-  if (isNaN(d.getTime())) return "";
-  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) +
-    "T" + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+  if (!iso || isNaN(d.getTime())) return "";
+  var w = new Date(berlinWallAsUtcMs(d.getTime()));
+  return w.getUTCFullYear() + "-" + pad2(w.getUTCMonth() + 1) + "-" + pad2(w.getUTCDate()) +
+    "T" + pad2(w.getUTCHours()) + ":" + pad2(w.getUTCMinutes());
 }
-function localInputValueToUtcIso(v) {
-  // "YYYY-MM-DDTHH:MM" in the browser's local timezone -> ISO-8601 UTC with Z
-  var d = new Date(v);
-  if (isNaN(d.getTime())) return null;
-  return d.toISOString();
+function berlinInputValueToUtcIso(v) {
+  // "YYYY-MM-DDTHH:MM" als Berliner Wanduhrzeit -> ISO-8601 UTC mit Z (DST-korrekt)
+  var m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(String(v || "").trim());
+  if (!m) return null;
+  var wall = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
+  if (isNaN(wall)) return null;
+  var guess = wall - berlinOffsetMs(wall);
+  guess = wall - berlinOffsetMs(guess);
+  guess = wall - berlinOffsetMs(guess);
+  if (berlinWallAsUtcMs(guess) !== wall) {
+    // Nicht existierende Uhrzeit (Sommerzeit-Sprung): auf die Winterzeit-Interpretation (+1 h) legen,
+    // ergibt z. B. 02:30 -> 03:30 MESZ.
+    guess = wall - 3600000;
+  }
+  return new Date(guess).toISOString();
 }
 function eventFieldErrEl(field) {
   return document.querySelector('.field-err[data-err-for="' + field + '"]');
@@ -729,19 +2317,31 @@ function eventFieldErrEl(field) {
 function isInt(v) {
   return Number.isInteger(v);
 }
+function updateTzTags() {
+  var form = $("eventForm");
+  ["reveal_time", "start_time"].forEach(function (f) {
+    var iso = berlinInputValueToUtcIso(form.elements[f].value);
+    var tag = form.elements[f].parentNode.querySelector(".tz-tag");
+    if (tag) tag.textContent = tzAbbr(iso ? Date.parse(iso) : Date.now());
+  });
+  var et = form.elements["end_time_display"].parentNode.querySelector(".tz-tag");
+  if (et) et.textContent = tzAbbr();
+}
 function updateEndTimeDisplay() {
-  var form = document.getElementById("eventForm");
+  var form = $("eventForm");
   var start = form.elements["start_time"].value;
   var dur = form.elements["duration_h"].value;
   var out = form.elements["end_time_display"];
   if (start === "" || dur === "") { out.value = ""; return; }
-  var sd = new Date(start);
+  var sIso = berlinInputValueToUtcIso(start);
+  var sd = new Date(sIso || NaN);
   var h = parseFloat(dur);
   if (isNaN(sd.getTime()) || isNaN(h)) { out.value = ""; return; }
-  out.value = utcToLocalInputValue(new Date(sd.getTime() + h * 3600 * 1000).toISOString());
+  var endMs = sd.getTime() + h * 3600 * 1000;
+  out.value = fmtDateTimeLong(endMs) + " Uhr " + tzAbbr(endMs);
 }
 function validateEventField(field) {
-  var form = document.getElementById("eventForm");
+  var form = $("eventForm");
   var input = form.elements[field];
   if (!input) return true;
   var v = input.value.trim();
@@ -764,10 +2364,10 @@ function validateEventField(field) {
       }
     }
   } else if (field === "reveal_time") {
-    if (v !== "" && isNaN(new Date(v).getTime())) err = "Ungültiges Datum.";
+    if (v !== "" && berlinInputValueToUtcIso(v) === null) err = "Ungültiges Datum.";
   } else if (field === "start_time") {
     if (v === "") err = "Startzeit ist erforderlich.";
-    else if (isNaN(new Date(v).getTime())) err = "Ungültiges Datum.";
+    else if (berlinInputValueToUtcIso(v) === null) err = "Ungültiges Datum.";
   } else if (field === "duration_h") {
     if (v === "") err = "Erforderlich.";
     else if (!isInt(num) || num < 1 || num > 72) err = "Ganze Zahl zwischen 1 und 72.";
@@ -795,36 +2395,41 @@ function validateAllEventFields() {
 }
 function loadEvent() {
   return api("/api/orga/event").then(function (ev) {
-    var form = document.getElementById("eventForm");
+    var form = $("eventForm");
     EVENT_FIELDS.forEach(function (f) {
       if (!form.elements[f]) return;
       var v = ev[f];
       if (f === "reveal_time" || f === "start_time") {
-        form.elements[f].value = v != null ? utcToLocalInputValue(v) : "";
+        form.elements[f].value = v != null ? utcToBerlinInputValue(v) : "";
       } else {
         form.elements[f].value = v != null ? String(v) : "";
       }
     });
+    updateTzTags();
     updateEndTimeDisplay();
     validateAllEventFields();
+    updateStartMap();
   });
 }
 EVENT_FIELDS.forEach(function (f) {
-  var input = document.getElementById("eventForm").elements[f];
+  var input = $("eventForm").elements[f];
   if (!input) return;
   input.addEventListener("input", function () {
     validateEventField(f);
+    if (f === "start_time" || f === "reveal_time") updateTzTags();
     if (f === "start_time" || f === "duration_h") updateEndTimeDisplay();
+    if (f === "start_lat" || f === "start_lng") updateStartMap();
   });
 });
-document.getElementById("saveEventBtn").addEventListener("click", function () {
-  var msg = document.getElementById("eventMsg");
+$("eventForm").addEventListener("submit", function (e) { e.preventDefault(); });
+$("saveEventBtn").addEventListener("click", function () {
+  var msg = $("eventMsg");
   msg.textContent = "";
   if (!validateAllEventFields()) {
     msg.appendChild(el("div", "msg err", "Bitte Eingaben korrigieren"));
     return;
   }
-  var form = document.getElementById("eventForm");
+  var form = $("eventForm");
   var body = {};
   var nonEmpty = function (f) { return form.elements[f].value.trim() !== ""; };
   if (nonEmpty("name")) body.name = form.elements["name"].value.trim();
@@ -832,7 +2437,7 @@ document.getElementById("saveEventBtn").addEventListener("click", function () {
     if (nonEmpty(f)) body[f] = Number(form.elements[f].value.trim());
   });
   ["reveal_time", "start_time"].forEach(function (f) {
-    if (nonEmpty(f)) body[f] = localInputValueToUtcIso(form.elements[f].value.trim());
+    if (nonEmpty(f)) body[f] = berlinInputValueToUtcIso(form.elements[f].value.trim());
   });
   if (nonEmpty("orga_phone")) body.orga_phone = form.elements["orga_phone"].value.trim();
   api("/api/orga/event", { method: "PUT", body: body }).then(function () {
@@ -844,9 +2449,38 @@ document.getElementById("saveEventBtn").addEventListener("click", function () {
   });
 });
 
-/* ---------- boot ---------- */
+// Vorschau-Karte des Startpunkts
+function onShowSettings() {
+  if (!startMap) {
+    startMap = L.map("startMap", { attributionControl: true }).setView([48.14, 11.58], 14);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: OSM_ATTR }).addTo(startMap);
+  }
+  setTimeout(function () { startMap.invalidateSize(); updateStartMap(); }, 30);
+}
+function updateStartMap() {
+  if (!startMap) return;
+  var form = $("eventForm");
+  var lat = parseFloat(form.elements["start_lat"].value), lng = parseFloat(form.elements["start_lng"].value);
+  if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    if (startMapMarker) { startMap.removeLayer(startMapMarker); startMapMarker = null; }
+    return;
+  }
+  if (startMapMarker) startMapMarker.setLatLng([lat, lng]);
+  else startMapMarker = L.marker([lat, lng], { icon: startIcon(), interactive: false }).addTo(startMap);
+  startMap.setView([lat, lng], startMap.getZoom() < 12 ? 15 : startMap.getZoom());
+}
 
-if (token) showApp();
+/* =====================================================================
+   16. BOOT
+   ===================================================================== */
+
+if (token) {
+  // bereits angemeldet (Sitzung): Intro überspringen, direkt in die App
+  $("login").classList.add("hidden");
+  showApp();
+} else {
+  playLoginIntro(1);
+}
 </script>
 </body>
 </html>

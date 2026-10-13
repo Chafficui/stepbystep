@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../brand/sbs_colors.dart';
+import '../brand/sbs_theme.dart';
+import '../brand/sbs_widgets.dart';
 import '../tracking/tracking_controller.dart';
 
 /// Abschluss-Seite nach Event-Ende (inline im Event-Screen eingebettet).
@@ -39,35 +42,45 @@ class EndScreenBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text('Das Event ist beendet.',
-                style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            const Text(
-                'Danke fürs Mitmachen! Check-ins werden nicht mehr '
-                'benötigt.'),
-            const Text(
-                'Die Ortsaufzeichnung läuft weiter, damit deine Position '
-                'für die Abholung bekannt bleibt.'),
-            const SizedBox(height: 16),
-            if (isRunning)
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(56),
-                ),
-                icon: const Icon(Icons.stop),
-                label:
-                    const Text('Tracking beenden', style: TextStyle(fontSize: 18)),
-                onPressed: () => _stopTracking(context),
-              )
-            else
-              const Text('Tracking beendet.'),
-          ],
-        ),
+    return SbsCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const TickRow(count: 5, lit: 5),
+          const SizedBox(height: 16),
+          const SbsHeading('Das Event ist beendet.', size: 26),
+          const SizedBox(height: 10),
+          Text(
+            'Danke fürs Mitmachen! Check-ins werden nicht mehr benötigt.',
+            style: SbsText.body(weight: FontWeight.w600),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Die Ortsaufzeichnung läuft weiter, damit deine Position für die '
+            'Abholung bekannt bleibt.',
+            style: SbsText.body(color: SbsColors.fgMuted),
+          ),
+          const SizedBox(height: 20),
+          if (isRunning)
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(56)),
+              icon: const Icon(Icons.stop_rounded),
+              label: const Text('Tracking beenden'),
+              onPressed: () => _stopTracking(context),
+            )
+          else
+            Row(
+              children: [
+                const Icon(Icons.check_circle_outline,
+                    size: 18, color: SbsColors.fgMuted),
+                const SizedBox(width: 8),
+                Text('Tracking beendet.',
+                    style: SbsText.body(color: SbsColors.fgMuted)),
+              ],
+            ),
+        ],
       ),
     );
   }

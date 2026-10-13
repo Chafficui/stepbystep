@@ -1,9 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
+import '../core/event_time.dart';
 import '../api/api_client.dart';
+import '../brand/sbs_colors.dart';
+import '../brand/sbs_theme.dart';
+import '../brand/sbs_widgets.dart';
 import '../state/services.dart';
 
 /// Rangliste-Tab: eigener Platz des Teams (NICHT andere Teams, keine
@@ -62,60 +65,112 @@ class _RankScreenState extends State<RankScreen> {
   String? _computedLabel() {
     final t = _computedAt;
     if (t == null) return null;
-    return DateFormat('dd.MM. yyyy, HH:mm').format(t.toLocal());
+    return '${fmtEventTime(t, 'dd.MM. yyyy, HH:mm')} Uhr';
   }
 
   @override
   Widget build(BuildContext context) {
+    return RankView(
+      loading: _loading,
+      error: _error,
+      rank: _rank,
+      teamCount: _teamCount,
+      computedLabel: _computedLabel(),
+      onRefresh: _load,
+    );
+  }
+}
+
+/// Präsentation des Rang-Tabs (reine Daten, testbar).
+class RankView extends StatelessWidget {
+  const RankView({
+    super.key,
+    required this.loading,
+    required this.error,
+    required this.rank,
+    required this.teamCount,
+    required this.computedLabel,
+    required this.onRefresh,
+  });
+
+  final bool loading;
+  final String? error;
+  final int? rank;
+  final int? teamCount;
+  final String? computedLabel;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final refresh = OutlinedButton.icon(
+      icon: const Icon(Icons.refresh),
+      label: const Text('Aktualisieren'),
+      onPressed: onRefresh,
+    );
+    final List<Widget> children;
+    if (loading) {
+      children = const [Center(child: CircularProgressIndicator())];
+    } else if (error != null) {
+      children = [
+        const Center(
+            child: Icon(Icons.cloud_off, size: 36, color: SbsColors.signal)),
+        const SizedBox(height: 12),
+        Text(error!,
+            textAlign: TextAlign.center,
+            style: SbsText.body(color: SbsColors.signal)),
+        const SizedBox(height: 20),
+        refresh,
+      ];
+    } else if (rank == null) {
+      children = [
+        const SbsHeading('Noch keine Rangliste',
+            size: 22, align: TextAlign.center),
+        const SizedBox(height: 20),
+        refresh,
+      ];
+    } else {
+      children = [
+        const Center(child: SbsLabel('Dein Team')),
+        const SizedBox(height: 14),
+        Center(
+            child: StopwatchRing(
+          size: 230,
+          progress: (teamCount == null || teamCount! <= 1)
+              ? 1
+              : 1 - (rank! - 1) / (teamCount! - 1),
+          strokeWidth: 6,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SbsLabel('Platz'),
+              Text('$rank', style: SbsText.number(76)),
+              Text('von $teamCount',
+                  style: SbsText.body(size: 15, color: SbsColors.fgMuted)),
+            ],
+          ),
+        )),
+        const SizedBox(height: 20),
+        Text(
+          'Dein Team ist auf Platz $rank von $teamCount',
+          textAlign: TextAlign.center,
+          style: SbsText.body(size: 15, weight: FontWeight.w600),
+        ),
+        if (computedLabel != null) ...[
+          const SizedBox(height: 6),
+          Text('Stand: $computedLabel',
+              textAlign: TextAlign.center,
+              style: SbsText.body(size: 13, color: SbsColors.fgMuted)),
+        ],
+        const SizedBox(height: 20),
+        refresh,
+      ];
+    }
     return Center(
       child: ListView(
-        padding: const EdgeInsets.all(16),
         shrinkWrap: true,
+        padding: const EdgeInsets.all(24),
         children: [
-          if (_loading)
-            const Center(child: CircularProgressIndicator())
-          else if (_error != null) ...[
-            Text(_error!, style: const TextStyle(color: Colors.red)),
-            const SizedBox(height: 12),
-            Center(
-              child: FilledButton.icon(
-                icon: const Icon(Icons.refresh),
-                label: const Text('Aktualisieren'),
-                onPressed: _load,
-              ),
-            ),
-          ] else if (_rank == null) ...[
-            const Text('Noch keine Rangliste', textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            Center(
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.refresh),
-                label: const Text('Aktualisieren'),
-                onPressed: _load,
-              ),
-            ),
-          ] else ...[
-            Text(
-              'Dein Team ist auf Platz $_rank von $_teamCount',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            if (_computedLabel() != null)
-              Text(
-                'Stand: ${_computedLabel()}',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.grey),
-              ),
-            const SizedBox(height: 12),
-            Center(
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.refresh),
-                label: const Text('Aktualisieren'),
-                onPressed: _load,
-              ),
-            ),
-          ],
+          ...sbsStagger(children),
         ],
       ),
     );

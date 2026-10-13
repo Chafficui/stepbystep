@@ -5,6 +5,10 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 
+import 'brand/sbs_colors.dart';
+import 'brand/sbs_logo.dart';
+import 'brand/sbs_theme.dart';
+import 'brand/sbs_widgets.dart';
 import 'config/api_config.dart';
 import 'screens/join_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -67,7 +71,7 @@ class StepByStepApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Schritt für Schritt',
+      title: 'StepByStep',
       navigatorKey: navigatorKey,
       locale: const Locale('de', 'DE'),
       supportedLocales: const [Locale('de', 'DE')],
@@ -76,8 +80,45 @@ class StepByStepApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.green),
-      home: const RootGate(),
+      theme: buildSbsTheme(),
+      darkTheme: buildSbsTheme(),
+      themeMode: ThemeMode.dark,
+      home: const SplashGate(),
+    );
+  }
+}
+
+/// Logo-Intro beim Kaltstart (einmal), danach weicher Übergang in [RootGate].
+class SplashGate extends StatefulWidget {
+  const SplashGate({super.key});
+
+  @override
+  State<SplashGate> createState() => _SplashGateState();
+}
+
+class _SplashGateState extends State<SplashGate> {
+  bool _introDone = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: SbsColors.bg,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 450),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        child: _introDone
+            ? const RootGate(key: ValueKey('root'))
+            : Scaffold(
+                key: const ValueKey('intro'),
+                backgroundColor: SbsColors.bg,
+                body: SbsLogoIntro(
+                  onFinished: () {
+                    if (mounted) setState(() => _introDone = true);
+                  },
+                ),
+              ),
+      ),
     );
   }
 }
@@ -124,7 +165,7 @@ class _RootGateState extends State<RootGate> {
       return const MissingConfigScreen();
     }
     if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: Center(child: SbsLogo(width: 120)));
     }
     return _hasSession
         ? OnboardingScreen(sessionStore: _store)
@@ -139,26 +180,29 @@ class MissingConfigScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
-              const SizedBox(height: 16),
-              Text(
-                'Server-URL fehlt (API_URL)',
-                style: Theme.of(context).textTheme.titleLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Die App wurde ohne Server-Adresse gebaut. Bitte neu bauen '
-                'mit: --dart-define=API_URL=https://<server>',
-                textAlign: TextAlign.center,
-              ),
-            ],
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: sbsStagger([
+                const SbsLogo(width: 120),
+                const SizedBox(height: 28),
+                const Icon(Icons.error_outline,
+                    size: 40, color: SbsColors.signal),
+                const SizedBox(height: 12),
+                const SbsHeading('Server-URL fehlt (API_URL)',
+                    size: 22, align: TextAlign.center),
+                const SizedBox(height: 10),
+                Text(
+                  'Die App wurde ohne Server-Adresse gebaut. Bitte neu bauen '
+                  'mit: --dart-define=API_URL=https://<server>',
+                  textAlign: TextAlign.center,
+                  style: SbsText.body(color: SbsColors.fgMuted),
+                ),
+              ]),
+            ),
           ),
         ),
       ),

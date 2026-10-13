@@ -5,8 +5,8 @@ import { requireParticipant, getParticipant } from '../auth.js';
 export async function meRoutes(app: FastifyInstance): Promise<void> {
   app.get('/me', { preHandler: requireParticipant }, async (request, reply) => {
     const participant = getParticipant(request);
-    const { rows } = await query<{ id: string; name: string; status: string }>(
-      'SELECT id, name, status FROM team WHERE id = $1',
+    const { rows } = await query<{ id: string; name: string; status: string; photo_updated_at: Date | null }>(
+      'SELECT id, name, status, photo_updated_at FROM team WHERE id = $1',
       [participant.team_id]
     );
     if (rows.length === 0) {
@@ -18,6 +18,7 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
       team_name: rows[0].name,
       team_status: rows[0].status,
       display_name: participant.display_name,
+      team_photo_updated_at: rows[0].photo_updated_at?.toISOString() ?? null,
     });
   });
 }

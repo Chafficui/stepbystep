@@ -35,7 +35,7 @@ docker compose -f "$COMPOSE_FILE" ps --status running db >/dev/null 2>&1 \
   || { echo "ERROR: db service is not running (docker compose -f $COMPOSE_FILE ps)" >&2; exit 1; }
 
 mkdir -p "$BACKUP_DIR"
-STAMP="$(date +%Y-%m-%dT%H%M)"
+STAMP="$(TZ=Europe/Berlin date +%Y-%m-%dT%H%M)"  # Zeitstempel in deutscher Zeit
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 

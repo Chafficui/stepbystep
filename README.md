@@ -8,8 +8,9 @@ stepbystep ist ein Tracking-MVP für ein 24-stündiges Gruppen-Walking-Event. Di
 | --- | --- | --- |
 | Teilnehmer-App (Android/iOS, deutsche UI) | Flutter | `app/` |
 | API | Node/TypeScript/Fastify (interner Port 8080) | `server/` |
-| Orga-Dashboard | Eine HTML-Datei, Leaflet via jsdelivr-CDN, vom Server unter `/` ausgeliefert | `dashboard/index.html` |
+| Orga-Dashboard | Eine HTML-Datei (+ Logo/Schrift in `dashboard/assets/`), Leaflet via jsdelivr-CDN, vom Server unter `/` ausgeliefert; Ansichten Live · Teams · Rangliste · Einstellungen | `dashboard/index.html` |
 | Deployment | docker-compose (Prod: db/api/caddy), Caddy mit Let's Encrypt | `deploy/` |
+| Design-System (Logo, Farben, Schrift, Animationen) | Saira (SIL OFL), Logo aus dem Intro vektorisiert | `BRAND.md` |
 | Betriebsskripte | Backup, Seed, Datenlöschung | `scripts/` |
 
 ## 2. Voraussetzungen
@@ -50,7 +51,7 @@ Hinweis: Die Ports **80/443** müssen in der Firewall des VPS-Hosters offen sein
 
 ## 4. Event einrichten
 
-Das Dashboard unter `https://<DOMAIN>/` öffnen und mit `ORGA_PASSWORD` anmelden. Unter **„Event-Einstellungen"** konfigurieren:
+Das Dashboard unter `https://<DOMAIN>/` öffnen und mit `ORGA_PASSWORD` anmelden. Unter **„Einstellungen"** (Seitenleiste bzw. Tab-Leiste auf dem Handy) konfigurieren:
 
 | Einstellung | Bedeutung |
 | --- | --- |
@@ -65,7 +66,7 @@ Das Dashboard unter `https://<DOMAIN>/` öffnen und mit `ORGA_PASSWORD` anmelden
 | `speed_flag_kmh` | Geschwindigkeit, ab der ein Team markiert wird (12) |
 | `orga_phone` | Telefonnummer, die der SOS-Knopf als Anruf-Link nutzt |
 
-Alle Einstellungen sind ohne Neubau der App änderbar. Teams werden über **„Team anlegen"** angelegt; der generierte Code (8 Zeichen, ohne `0/O/1/I`) wird an das Team weitergegeben.
+Alle Einstellungen sind ohne Neubau der App änderbar. Teams werden in der Ansicht **„Teams"** über **„Team anlegen"** angelegt; der generierte Code (8 Zeichen, ohne `0/O/1/I`) wird an das Team weitergegeben.
 
 Für einen Testlauf alternativ:
 
@@ -75,7 +76,7 @@ Für einen Testlauf alternativ:
 
 Das setzt die Startzeit auf +15 Minuten und legt die Teams `TESTAAAA` und `TESTBBBB` an; mit `--dev` wird die Dev-Compose verwendet.
 
-In der Teilnehmer-App über **„Team beitreten"** mit Code + Name einloggen; pro Team sind maximal 2 Geräte möglich. Sind App-Daten verloren gegangen, entfernt die Orga den Teilnehmer im Dashboard, danach ist ein Neubeitritt möglich.
+In der Teilnehmer-App über **„Team beitreten"** mit Code + Name einloggen; pro Team sind maximal 2 Geräte möglich. Vor dem Eventstart muss jedes Team ein **Teamfoto** aufnehmen (einmal pro Team); es erscheint im Dashboard als Pin auf der Karte und in der App als eigener Positions-Pin. Die Orga kann ein Foto in der Team-Schublade zurücksetzen. Sind App-Daten verloren gegangen, entfernt die Orga den Teilnehmer im Dashboard, danach ist ein Neubeitritt möglich.
 
 ## 5. App bauen und verteilen
 

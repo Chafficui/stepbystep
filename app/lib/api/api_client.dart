@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
@@ -51,6 +52,7 @@ class MeResult {
     required this.teamName,
     required this.teamStatus,
     required this.displayName,
+    this.teamPhotoUpdatedAt,
   });
 
   factory MeResult.fromJson(Map<String, dynamic> json) => MeResult(
@@ -58,12 +60,40 @@ class MeResult {
         teamName: json['team_name'] as String,
         teamStatus: json['team_status'] as String,
         displayName: json['display_name'] as String,
+        teamPhotoUpdatedAt: json['team_photo_updated_at'] == null
+            ? null
+            : DateTime.parse(json['team_photo_updated_at'] as String).toUtc(),
       );
 
   final String teamId;
   final String teamName;
   final String teamStatus;
   final String displayName;
+
+  /// Zeitstempel des Teamfotos; null = Team hat (noch) kein Foto.
+  final DateTime? teamPhotoUpdatedAt;
+}
+
+/// Ein Punkt der Team-Spur (`GET /api/my-track`), alle Team-Geräte.
+class TrackPoint {
+  const TrackPoint({
+    required this.lat,
+    required this.lng,
+    required this.recordedAt,
+    this.participantId,
+  });
+
+  factory TrackPoint.fromJson(Map<String, dynamic> json) => TrackPoint(
+        lat: (json['lat'] as num).toDouble(),
+        lng: (json['lng'] as num).toDouble(),
+        recordedAt: DateTime.parse(json['recorded_at'] as String).toUtc(),
+        participantId: json['participant_id'] as String?,
+      );
+
+  final double lat;
+  final double lng;
+  final DateTime recordedAt;
+  final String? participantId;
 }
 
 /// Antwort von `GET /api/my-rank`.
@@ -235,6 +265,61 @@ class ApiClient {
     } on SocketException catch (e) {
       throw ApiException(0, 'Keine Verbindung zum Server (${e.message})');
     }
+  }
+
+  /// `POST /api/team-photo` — multipart/form-data, idempotent (id).
+  /// Liefert `photo_updated_at` des Servers.
+  Future<DateTime> postTeamPhoto({
+    required String token,
+    required String id,
+    required DateTime capturedAt,
+    required File file,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/team-photo');
+    final request = http.MultipartRequest('POST', uri)
+      ..headers.addAll(options(token: token))
+      ..fields['id'] = id
+      ..fields['captured_at'] = capturedAt.toUtc().toIso8601String()
+      ..files.add(await http.MultipartFile.fromPath('file', file.path));
+    try {
+      final response =
+          await http.Response.fromStream(await _client.send(request));
+      final json = _decode(response);
+      final ts = json['photo_updated_at'] as String?;
+      return ts == null ? DateTime.now().toUtc() : DateTime.parse(ts).toUtc();
+    } on SocketException catch (e) {
+      throw ApiException(0, 'Keine Verbindung zum Server (${e.message})');
+    }
+  }
+
+  /// `GET /api/team-photo` — Bildbytes des Teamfotos, null bei 404.
+  Future<Uint8List?> getTeamPhoto(String token) async {
+    final uri = Uri.parse('$baseUrl/api/team-photo');
+    try {
+      final response = await _client.get(uri,
+          headers: options(token: token)..['Accept'] = 'image/*');
+      if (response.statusCode == 404) return null;
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return response.bodyBytes;
+      }
+      _decode(response); // wirft Auth-/ApiException
+      return null;
+    } on SocketException catch (e) {
+      throw ApiException(0, 'Keine Verbindung zum Server (${e.message})');
+    }
+  }
+
+  /// `GET /api/my-track?since=` — Spur des eigenen Teams (alle Geräte),
+  /// aufsteigend sortiert.
+  Future<List<TrackPoint>> getMyTrack(String token, {DateTime? since}) async {
+    final q = since == null
+        ? ''
+        : '?since=${Uri.encodeQueryComponent(since.toUtc().toIso8601String())}';
+    final json = await _get('/api/my-track$q', token);
+    final list = json['points'] as List<dynamic>? ?? const [];
+    return [
+      for (final p in list) TrackPoint.fromJson(p as Map<String, dynamic>),
+    ];
   }
 
   void close() => _client.close();
