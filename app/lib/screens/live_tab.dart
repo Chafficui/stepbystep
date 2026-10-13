@@ -1,10 +1,10 @@
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../brand/sbs_colors.dart';
 import '../brand/sbs_theme.dart';
 import '../brand/sbs_widgets.dart';
+import '../core/event_time.dart';
 import '../models/event_config.dart';
 import '../services/team_photo_service.dart';
 import '../tracking/tracking_controller.dart';
@@ -45,7 +45,7 @@ class StatusData {
   String get lastUploadLabel {
     final t = stats.lastSuccessAt;
     if (t == null) return 'noch keiner';
-    return DateFormat('HH:mm').format(t.toLocal());
+    return '${fmtEventTime(t, 'HH:mm')} Uhr';
   }
 
   @override
@@ -73,7 +73,7 @@ String formatHms(Duration d) {
 }
 
 String _localTime(DateTime utc) =>
-    DateFormat('dd.MM. HH:mm').format(utc.toLocal());
+    fmtEventDateTime(utc);
 
 /// Live-Tab: Event-Ring, Tracking-Schalter, Status-Chips, nächster
 /// Check-in, Event-Infos und Notfall-Bereich.

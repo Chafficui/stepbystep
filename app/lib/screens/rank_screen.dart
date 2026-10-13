@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
+import '../core/event_time.dart';
 import '../api/api_client.dart';
 import '../brand/sbs_colors.dart';
 import '../brand/sbs_theme.dart';
@@ -65,7 +65,7 @@ class _RankScreenState extends State<RankScreen> {
   String? _computedLabel() {
     final t = _computedAt;
     if (t == null) return null;
-    return DateFormat('dd.MM. yyyy, HH:mm').format(t.toLocal());
+    return '${fmtEventTime(t, 'dd.MM. yyyy, HH:mm')} Uhr';
   }
 
   @override

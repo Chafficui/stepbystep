@@ -59,7 +59,8 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> {
+class _MapScreenState extends State<MapScreen>
+    with SingleTickerProviderStateMixin {
   TrackingService? get _tracking =>
       widget.tracking ?? AppServices.instanceOrNull?.tracking;
 
@@ -73,14 +74,23 @@ class _MapScreenState extends State<MapScreen> {
   List<TrackPoint> _local = const [];
   List<TrackPoint> _merged = const [];
   bool _loaded = false;
-  bool _fitted = false;
+  /// Kein Standpunkt bekannt: Spur bzw. Startpunkt nur einmal anfahren.
+  bool _fallbackDone = false;
+  bool _firstFocus = true;
 
-  /// Folgt die Kamera der Position? Wird bei Nutzer-Gesten abgeschaltet.
-  bool _follow = true;
+  /// Auto-Fokus pausiert (Nutzer hat die Karte bewegt / "Ganze Strecke").
+  bool _paused = false;
+  DateTime? _resumeAt;
+  static const _resumeAfter = Duration(seconds: 10);
+  static const double _followZoom = 16;
   LatLng? _lastCentered;
 
   Timer? _localTimer;
   Timer? _serverTimer;
+  Timer? _resumeTimer;
+  Timer? _countdownTimer;
+  late final AnimationController _anim = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 600));
 
   @override
   void initState() {
@@ -100,6 +110,9 @@ class _MapScreenState extends State<MapScreen> {
     _photo?.removeListener(_onPhoto);
     _localTimer?.cancel();
     _serverTimer?.cancel();
+    _resumeTimer?.cancel();
+    _countdownTimer?.cancel();
+    _anim.dispose();
     _map.dispose();
     super.dispose();
   }
@@ -179,42 +192,121 @@ class _MapScreenState extends State<MapScreen> {
     return null;
   }
 
-  /// Erst-Ausschnitt: ganze Spur; danach der Position folgen (solange der
-  /// Nutzer die Karte nicht selbst bewegt hat).
+  /// Hält das eigene Team im Fokus: der aktuellen Position folgen (Zoom 16),
+  /// solange der Nutzer die Karte nicht selbst bewegt hat.
   void _applyCamera() {
-    if (!mounted || !_mapReady) return;
+    if (!mounted || !_mapReady || _paused) return;
     final cur = _currentPosition;
-    if (!_fitted) {
-      if (_merged.length >= 2) {
-        _fitted = true;
-        _map.fitCamera(CameraFit.coordinates(
-          coordinates: [for (final p in _merged) LatLng(p.lat, p.lng)],
-          padding: const EdgeInsets.fromLTRB(48, 96, 48, 96),
-          maxZoom: 17,
-        ));
+    if (cur != null) {
+      if (_firstFocus) {
+        _firstFocus = false;
         _lastCentered = cur;
-        return;
-      }
-      if (cur != null) {
-        _fitted = true;
-        _map.move(cur, 16);
+        _map.move(cur, _followZoom);
+      } else if (cur != _lastCentered) {
         _lastCentered = cur;
-        return;
+        _animateTo(cur, _followZoom);
       }
       return;
     }
-    if (_follow && cur != null && cur != _lastCentered) {
-      _lastCentered = cur;
-      _map.move(cur, _map.camera.zoom);
+    if (_fallbackDone) return;
+    if (_merged.length >= 2) {
+      _fallbackDone = true;
+      _fitTrack();
+      return;
+    }
+    final start = _startPoint(widget.config, DateTime.now());
+    if (start != null) {
+      _fallbackDone = true;
+      _map.move(start, 15);
     }
   }
 
-  void _recenter() {
+  void _fitTrack() {
+    if (_merged.isEmpty) return;
+    _anim.stop();
+    _map.fitCamera(CameraFit.coordinates(
+      coordinates: [for (final p in _merged) LatLng(p.lat, p.lng)],
+      padding: const EdgeInsets.fromLTRB(48, 96, 48, 96),
+      maxZoom: 17,
+    ));
+  }
+
+  /// Sanfte Kamerafahrt (programmatisch, löst kein `hasGesture` aus).
+  void _animateTo(LatLng dest, double zoom) {
+    final from = _map.camera.center;
+    final z0 = _map.camera.zoom;
+    final curve = CurvedAnimation(parent: _anim, curve: Curves.easeInOut);
+    void tick() {
+      if (!mounted) return;
+      final t = curve.value;
+      _map.move(
+        LatLng(from.latitude + (dest.latitude - from.latitude) * t,
+            from.longitude + (dest.longitude - from.longitude) * t),
+        z0 + (zoom - z0) * t,
+      );
+    }
+
+    _anim
+      ..removeListener(_animListener ?? () {})
+      ..stop();
+    _animListener = tick;
+    _anim
+      ..addListener(tick)
+      ..forward(from: 0);
+  }
+
+  VoidCallback? _animListener;
+
+  /// Nutzer hat gezoomt/geschoben: Auto-Fokus pausieren, 10 s Ruhe -> zurück.
+  void _onUserMoved() {
+    _anim.stop();
+    _pause();
+  }
+
+  void _pause() {
+    _resumeAt = DateTime.now().add(_resumeAfter);
+    _resumeTimer?.cancel();
+    _resumeTimer = Timer(_resumeAfter, _resume);
+    _countdownTimer ??= Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+    if (!_paused) {
+      setState(() => _paused = true);
+    } else {
+      setState(() {});
+    }
+  }
+
+  void _resume() {
+    _resumeTimer?.cancel();
+    _countdownTimer?.cancel();
+    _countdownTimer = null;
+    _resumeAt = null;
+    if (!mounted) return;
+    setState(() => _paused = false);
     final cur = _currentPosition;
-    if (cur == null) return;
-    setState(() => _follow = true);
-    _lastCentered = cur;
-    _map.move(cur, math.max(_map.camera.zoom, 16));
+    if (cur != null) {
+      _lastCentered = cur;
+      _animateTo(cur, _followZoom);
+    } else {
+      _fallbackDone = false;
+      _applyCamera();
+    }
+  }
+
+  void _recenter() => _resume();
+
+  void _showWholeTrack() {
+    if (_merged.isEmpty) return;
+    _pause();
+    _fitTrack();
+  }
+
+  int? get _resumeSeconds {
+    final at = _resumeAt;
+    if (!_paused || at == null) return null;
+    final ms = at.difference(DateTime.now()).inMilliseconds;
+    return ((ms + 999) ~/ 1000).clamp(1, 10);
   }
 
   /// Startpunkt nur, wenn die Route bereits enthüllt wurde und das Event
@@ -238,15 +330,15 @@ class _MapScreenState extends State<MapScreen> {
       loaded: _loaded,
       photoBytes: _photo?.value.bytes,
       controller: _map,
-      following: _follow,
+      following: !_paused,
+      resumeInSeconds: _resumeSeconds,
       onMapReady: () {
         _mapReady = true;
         _applyCamera();
       },
-      onUserMoved: () {
-        if (_follow) setState(() => _follow = false);
-      },
+      onUserMoved: _onUserMoved,
       onRecenter: _recenter,
+      onShowTrack: _merged.length >= 2 ? _showWholeTrack : null,
     );
   }
 }
@@ -266,6 +358,8 @@ class MapView extends StatelessWidget {
     this.onMapReady,
     this.onUserMoved,
     this.onRecenter,
+    this.onShowTrack,
+    this.resumeInSeconds,
   });
 
   final List<LatLng> track;
@@ -280,6 +374,10 @@ class MapView extends StatelessWidget {
   final VoidCallback? onMapReady;
   final VoidCallback? onUserMoved;
   final VoidCallback? onRecenter;
+  final VoidCallback? onShowTrack;
+
+  /// Sekunden bis der Auto-Fokus zurückkehrt (null = Auto-Fokus aktiv).
+  final int? resumeInSeconds;
 
   /// Invertiert + entsättigt + abgedunkelt: OSM-Kacheln im Dunkel-Look.
   static const ColorFilter darkTiles = ColorFilter.matrix(<double>[
@@ -371,32 +469,50 @@ class MapView extends StatelessWidget {
             right: 12,
             child: _BearingArrow(bearingDeg: bearing),
           ),
-        if (onRecenter != null)
+        if (resumeInSeconds != null)
           Positioned(
-            right: 12,
-            bottom: 40,
-            child: Tooltip(
-              message: 'Auf mich zentrieren',
-              child: Material(
+            left: 12,
+            top: 12,
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
                 color: SbsColors.surface,
-                shape: CircleBorder(
-                  side: BorderSide(
-                      color: following ? SbsColors.fg : SbsColors.lineStrong),
-                ),
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: current == null ? null : onRecenter,
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Icon(
-                        following ? Icons.my_location : Icons.location_searching,
-                        size: 24,
-                        color: following ? SbsColors.fg : SbsColors.fgMuted),
-                  ),
-                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: SbsColors.lineStrong),
               ),
+              child: Text('Auto-Fokus in ${resumeInSeconds}s',
+                  style: const TextStyle(
+                      color: SbsColors.fg,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600)),
             ),
           ),
+        Positioned(
+          right: 12,
+          bottom: 40,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (onShowTrack != null) ...[
+                _MapButton(
+                  tooltip: 'Ganze Strecke',
+                  icon: Icons.route,
+                  active: false,
+                  onTap: onShowTrack,
+                ),
+                const SizedBox(height: 10),
+              ],
+              if (onRecenter != null)
+                _MapButton(
+                  tooltip: 'Auf mich zentrieren',
+                  icon: following ? Icons.my_location : Icons.location_searching,
+                  active: following,
+                  onTap: current == null ? null : onRecenter,
+                ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -539,4 +655,42 @@ class _ArrowPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ArrowPainter oldDelegate) =>
       oldDelegate.rotationRad != rotationRad;
+}
+
+class _MapButton extends StatelessWidget {
+  const _MapButton({
+    required this.tooltip,
+    required this.icon,
+    required this.active,
+    required this.onTap,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final bool active;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: SbsColors.surface,
+        shape: CircleBorder(
+          side: BorderSide(
+              color: active ? SbsColors.fg : SbsColors.lineStrong),
+        ),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Icon(icon,
+                size: 24,
+                color: active ? SbsColors.fg : SbsColors.fgMuted),
+          ),
+        ),
+      ),
+    );
+  }
 }

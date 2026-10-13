@@ -71,7 +71,7 @@ class StepByStepApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Schritt für Schritt',
+      title: 'StepByStep',
       navigatorKey: navigatorKey,
       locale: const Locale('de', 'DE'),
       supportedLocales: const [Locale('de', 'DE')],

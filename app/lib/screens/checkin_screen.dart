@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../brand/sbs_colors.dart';
 import '../brand/sbs_theme.dart';
 import '../brand/sbs_widgets.dart';
 import '../core/slot_calc.dart';
 import '../db/app_database.dart';
+import '../core/event_time.dart';
 import '../models/event_config.dart';
 import '../services/checkin_service.dart';
 import '../state/services.dart';
@@ -209,8 +209,8 @@ class CheckinView extends StatelessWidget {
                     Text(countdown, style: SbsText.number(30)),
                     const SizedBox(height: 2),
                     Text(
-                      'Nächster Check-in fällig: '
-                      '${DateFormat('dd.MM. HH:mm').format(due.toLocal())}',
+                      'Fällig: '
+                      '${fmtEventDateTime(due)}',
                       style: SbsText.body(size: 13, color: SbsColors.fgMuted),
                     ),
                   ],

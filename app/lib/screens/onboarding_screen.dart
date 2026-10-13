@@ -12,7 +12,7 @@ import '../services/battery_optimization.dart';
 import '../state/session_store.dart';
 import 'team_photo_gate.dart';
 
-/// Schritt-für-Schritt Berechtigungs-Checkliste mit Live-Status.
+/// Schrittweise Berechtigungs-Checkliste mit Live-Status.
 ///
 /// Reihenfolge:
 /// 1. Standort „Immer" (Blocker – ohne das bleibt „Tracking starten" aus)
