@@ -104,6 +104,22 @@ a { color: var(--fg); }
 .badge.silent { background: var(--info); }
 .badge.overdue { background: var(--signal); }
 .badge.speed { background: var(--warn); }
+.badge.nophoto { background: var(--warn); }
+
+/* ---- Team-Fotos ---- */
+.avatar {
+  display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; flex: none; overflow: hidden;
+  background: var(--surface-2) center / cover no-repeat; border: 2px solid var(--c, var(--line-strong)); color: var(--fg-muted);
+  font-size: 12px; font-weight: 800; font-style: italic; letter-spacing: .02em;
+}
+.avatar.sm { width: 30px; height: 30px; font-size: 11px; }
+.nm-cell { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.dphoto { margin-top: 16px; }
+.dphoto .frame { width: 100%; aspect-ratio: 4 / 3; border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--line-strong); background: var(--surface-2); display: grid; place-items: center; }
+.dphoto .frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dphoto .frame .muted { padding: 12px; text-align: center; }
+.dphoto .dp-actions { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.pop-photo { display: block; width: 220px; max-width: 100%; border-radius: var(--r-sm); margin: 0 0 8px; }
 
 /* ---- Status ---- */
 .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--fg-faint); flex: none; }
@@ -237,7 +253,7 @@ input[aria-invalid="true"] { border-color: var(--signal); }
 .alarm .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
 /* ---- Live ---- */
-.kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpis { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
 .kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px 12px; position: relative; overflow: hidden; }
 .kpi .label { display: block; margin-bottom: 6px; min-height: 26px; }
 .kpi .val { font-size: 40px; line-height: 1; }
@@ -254,14 +270,15 @@ input[aria-invalid="true"] { border-color: var(--signal); }
 .teamlist-card .card-head { padding: 14px 16px 0; margin-bottom: 8px; }
 .teamlist { overflow-y: auto; padding: 0 8px 8px; flex: 1; }
 .tl-item {
-  display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 4px 10px; align-items: start; width: 100%; text-align: left;
+  display: grid; grid-template-columns: 14px 36px minmax(0, 1fr); gap: 2px 10px; align-items: start; width: 100%; text-align: left;
   padding: 10px 10px; background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; color: var(--fg);
 }
 .tl-item:hover { background: var(--surface-2); }
-.tl-item .dot { margin-top: 6px; }
+.tl-item .dot { margin-top: 6px; grid-row: 1; }
+.tl-item .avatar { grid-column: 2; grid-row: 1 / span 3; align-self: center; }
+.tl-item .nm, .tl-item .sub, .tl-item .badges { grid-column: 3; }
 .tl-item .nm { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; gap: 8px; align-items: baseline; }
-.tl-item .sub { grid-column: 2; font-size: 12px; color: var(--fg-muted); display: flex; gap: 12px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
-.tl-item .badges { grid-column: 2; }
+.tl-item .sub { font-size: 12px; color: var(--fg-muted); display: flex; gap: 12px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
 .tl-item.sos { box-shadow: inset 3px 0 0 var(--signal); }
 .empty { padding: 28px 12px; text-align: center; color: var(--fg-muted); font-size: 13px; }
 
@@ -282,6 +299,24 @@ input[aria-invalid="true"] { border-color: var(--signal); }
 .mk.aborted i { border-radius: 2px; transform: rotate(45deg); }
 .mk.sos::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--signal); animation: ring-pulse 1.8s cubic-bezier(.2,.6,.3,1) infinite; }
 .mk.sos i { box-shadow: 0 0 0 2px var(--signal); }
+.pk { position: relative; width: 44px; height: 44px; }
+.pk-face {
+  position: absolute; inset: 0; border-radius: 50%; background: var(--surface-2) center / cover no-repeat; border: 3px solid var(--c, #fff);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .55); display: grid; place-items: center; color: var(--fg-muted); font-weight: 800; font-style: italic; font-size: 13px;
+}
+.pk.noimg { width: 30px; height: 30px; }
+.pk.noimg .pk-face { background: var(--c, #fff); color: var(--on-fg); border-color: var(--bg); box-shadow: 0 0 0 1.5px var(--c, #fff); font-size: 11px; }
+.pk.aborted .pk-face { filter: grayscale(.85); }
+.pk.finished .pk-face { border-style: double; border-width: 4px; }
+.pk-st {
+  position: absolute; right: -4px; bottom: -4px; width: 17px; height: 17px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 10px; font-weight: 800; line-height: 1; border: 2px solid var(--bg); color: var(--on-fg);
+}
+.pk-st.aborted { background: var(--warn); }
+.pk-st.finished { background: var(--fg); }
+.pk.noimg .pk-st { width: 14px; height: 14px; font-size: 8px; right: -5px; bottom: -5px; }
+.pk.sos::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--signal); animation: ring-pulse 1.8s cubic-bezier(.2,.6,.3,1) infinite; pointer-events: none; }
+.pk.sos .pk-face { border-color: var(--signal); }
 .mk-start { width: 28px; height: 28px; border-radius: 50%; background: var(--bg); border: 2px solid var(--fg); color: var(--fg); display: grid; place-items: center; font-weight: 800; font-style: italic; font-size: 13px; }
 
 /* ---- Teams ---- */
@@ -435,7 +470,7 @@ dialog::backdrop { background: rgba(0,0,0,.72); }
 
 /* ---- Reduzierte Bewegung ---- */
 @media (prefers-reduced-motion: reduce) {
-  .alarm-count::after, .pulse::after, .alarm .sig::after, .mk.sos::after, .phase.running .dot { animation: none; }
+  .alarm-count::after, .pulse::after, .alarm .sig::after, .mk.sos::after, .pk.sos::after, .phase.running .dot { animation: none; }
   .alarm .sig::after, .mk.sos::after { opacity: .6; }
   .icon-btn.busy svg { animation: none; }
 }
@@ -536,6 +571,7 @@ dialog::backdrop { background: rgba(0,0,0,.72); }
           <div class="kpi rise" id="kpiAlarms"><span class="label">Offene Alarme</span><span class="val num">0</span></div>
           <div class="kpi rise" id="kpiHints"><span class="label">Teams mit Hinweisen</span><span class="val num">0</span></div>
           <div class="kpi rise" id="kpiOverdue"><span class="label">Check-in überfällig</span><span class="val num">0</span></div>
+          <div class="kpi rise" id="kpiNoPhoto"><span class="label">Teamfoto fehlt</span><span class="val num">0</span></div>
         </div>
         <div class="live-grid">
           <div class="card map-card rise"><div class="map-wrap"><div id="map"></div></div></div>
@@ -1004,6 +1040,7 @@ function logout(clearSession) {
   stopPolling();
   stopTitleBlink();
   closeDrawer();
+  clearPhotos();
   if ($("checkinDlg").open) $("checkinDlg").close();
   $("app").classList.add("hidden");
   $("login").classList.remove("hidden");
@@ -1108,6 +1145,7 @@ function refresh() {
     if (data.event && data.event.name) $("eventName").textContent = data.event.name;
     if (data.event && data.event.start_lat != null) setStartMarker(data.event.start_lat, data.event.start_lng);
     renderAll();
+    syncPhotos(state.teams);
     updateTracks(state.teams);
   }).catch(function (err) {
     if (err.message === "Nicht angemeldet") return;
@@ -1370,21 +1408,116 @@ function since6h() {
   return new Date(Date.now() - 6 * 3600 * 1000).toISOString();
 }
 
+/* ---- Teamfotos (per Bearer-Token geladen -> Blob-URLs, pro Team nach photo_updated_at gecacht) ---- */
+
+var photoCache = {};             // teamId -> {ver, url, loading, failedAt}
+var photoRenderTimer = null;
+function teamPhotoMissing(t) { return !t.photo_updated_at; }
+function photoUrl(t) {
+  var c = photoCache[t.id];
+  return t.photo_updated_at && c && c.url ? c.url : null;
+}
+function dropPhoto(id) {
+  var c = photoCache[id];
+  if (c && c.url) URL.revokeObjectURL(c.url);
+  delete photoCache[id];
+}
+function clearPhotos() { Object.keys(photoCache).forEach(dropPhoto); }
+function currentTeam(id) {
+  return state.teams.filter(function (t) { return t.id === id; })[0] || null;
+}
+function schedulePhotoRender() {
+  if (photoRenderTimer) return;
+  photoRenderTimer = setTimeout(function () {
+    photoRenderTimer = null;
+    renderTeamList();
+    renderTeamsTable();
+    updateMarkers();
+    if (state.drawerTeamId) { var t = currentTeam(state.drawerTeamId); if (t) renderDrawerPhoto(t); }
+  }, 60);
+}
+function loadTeamPhoto(t) {
+  var ver = t.photo_updated_at;
+  var c = photoCache[t.id] = photoCache[t.id] || {};
+  c.ver = ver; c.loading = true; c.failedAt = 0;
+  fetch("/api/orga/teams/" + encodeURIComponent(t.id) + "/photo", { headers: { "Authorization": "Bearer " + token } })
+    .then(function (res) {
+      if (res.status === 401) { logout(false); throw new Error("Nicht angemeldet"); }
+      if (!res.ok) throw new Error("Fehler (" + res.status + ")");
+      return res.blob();
+    })
+    .then(function (blob) {
+      var cur = photoCache[t.id];
+      if (!cur || cur.ver !== ver) return;      // inzwischen ersetzt oder zurückgesetzt
+      var old = cur.url;
+      cur.url = URL.createObjectURL(blob);
+      cur.loading = false;
+      if (old) URL.revokeObjectURL(old);
+      schedulePhotoRender();
+    })
+    .catch(function () {
+      var cur = photoCache[t.id];
+      if (cur && cur.ver === ver) { cur.loading = false; cur.failedAt = Date.now(); }
+    });
+}
+// Nach jedem Poll: nur neu laden, wenn sich photo_updated_at geändert hat (Fehlversuche frühestens nach 60 s erneut).
+function syncPhotos(teams) {
+  var ids = {};
+  teams.forEach(function (t) {
+    ids[t.id] = true;
+    var c = photoCache[t.id];
+    if (!t.photo_updated_at) { if (c) { dropPhoto(t.id); schedulePhotoRender(); } return; }
+    if (c && c.ver === t.photo_updated_at) {
+      if (c.loading || c.url || Date.now() - c.failedAt < 60000) return;
+    }
+    loadTeamPhoto(t);
+  });
+  Object.keys(photoCache).forEach(function (id) { if (!ids[id]) dropPhoto(id); });
+}
+function initials(name) {
+  var w = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!w.length) return "?";
+  return (w.length > 1 ? w[0].charAt(0) + w[1].charAt(0) : w[0].slice(0, 2)).toUpperCase();
+}
+function avatarNode(t, cls) {
+  var a = el("span", "avatar" + (cls ? " " + cls : ""));
+  a.style.setProperty("--c", colorForTeam(t.id));
+  var u = photoUrl(t);
+  if (u) a.style.backgroundImage = 'url("' + u + '")';
+  else a.textContent = initials(t.name);
+  return a;
+}
+function noPhotoBadge(host) { host.appendChild(el("span", "badge nophoto", "Teamfoto fehlt")); }
+
 function teamHasSos(t) {
   return openAlerts(state.alerts).some(function (a) { return a.type === "sos" && a.team_name === t.name; });
 }
 
 function teamIcon(t) {
-  var c = colorForTeam(t.id);
-  var d = el("div", "mk " + (t.status || "") + (teamHasSos(t) ? " sos" : ""));
-  d.style.setProperty("--c", c);
-  d.appendChild(el("i"));
-  return L.divIcon({ html: d, className: "", iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -10] });
+  var u = photoUrl(t);
+  var size = u ? 44 : 30;
+  var d = el("div", "pk " + (t.status || "") + (teamHasSos(t) ? " sos" : "") + (u ? "" : " noimg"));
+  d.style.setProperty("--c", colorForTeam(t.id));
+  var face = el("div", "pk-face");
+  if (u) face.style.backgroundImage = 'url("' + u + '")';
+  else face.textContent = initials(t.name);
+  d.appendChild(face);
+  if (t.status === "aborted") d.appendChild(el("span", "pk-st aborted", "\u2715"));
+  else if (t.status === "finished") d.appendChild(el("span", "pk-st finished", "\u2713"));
+  return L.divIcon({ html: d, className: "", iconSize: [size, size], iconAnchor: [size / 2, size / 2], popupAnchor: [0, -size / 2] });
 }
 
 function teamPopup(t) {
   return function () {
     var d = el("div");
+    var u = photoUrl(t);
+    if (u) {
+      var img = document.createElement("img");
+      img.className = "pop-photo";
+      img.alt = "Teamfoto " + (t.name || "");
+      img.src = u;
+      d.appendChild(img);
+    }
     d.appendChild(el("strong", null, t.name));
     d.appendChild(el("div", "muted", "Letzter Punkt " + minutesAgo(t.minutes_since_last_point)));
     return d;
@@ -1494,6 +1627,10 @@ function renderKpis() {
   setKpi("kpiAlarms", open, open ? "signal pulse" : "");
   setKpi("kpiHints", hints, hints ? "warn" : "");
   setKpi("kpiOverdue", overdue, overdue ? "signal" : "");
+  // Vor Eventstart ist ein fehlendes Teamfoto dringend (signal), danach nur noch ein Hinweis (warn).
+  var noPhoto = teams.filter(teamPhotoMissing).length;
+  var started = state.event && state.event.start_time && Date.parse(state.event.start_time) <= nowMs();
+  setKpi("kpiNoPhoto", noPhoto, noPhoto ? (started ? "warn" : "signal") : "");
 }
 
 function hintBadges(t, host) {
@@ -1524,6 +1661,7 @@ function renderTeamList() {
     var b = el("button", "tl-item" + (teamHasSos(t) ? " sos" : ""));
     b.type = "button";
     b.appendChild(el("span", "dot " + (t.status || "")));
+    b.appendChild(avatarNode(t));
     b.appendChild(el("div", "nm", t.name || ""));
     var sub = el("div", "sub");
     sub.appendChild(el("span", null, statusLabel(t.status)));
@@ -1532,7 +1670,9 @@ function renderTeamList() {
     sub.appendChild(bat);
     b.appendChild(sub);
     var badges = el("div", "badges");
-    if (hintBadges(t, badges)) b.appendChild(badges);
+    var anyBadge = hintBadges(t, badges);
+    if (teamPhotoMissing(t)) { noPhotoBadge(badges); anyBadge = true; }
+    if (anyBadge) b.appendChild(badges);
     b.addEventListener("click", function () { focusTeam(t); });
     host.appendChild(b);
   });
@@ -1578,7 +1718,12 @@ function renderTeamsTable() {
   $("teamsEmpty").classList.toggle("hidden", list.length > 0);
   list.forEach(function (t) {
     var tr = el("tr", "teamrow");
-    tr.appendChild(el("td", "name", t.name || ""));
+    var nameTd = el("td", "name");
+    var nmCell = el("div", "nm-cell");
+    nmCell.appendChild(avatarNode(t, "sm"));
+    nmCell.appendChild(el("span", null, t.name || ""));
+    nameTd.appendChild(nmCell);
+    tr.appendChild(nameTd);
     tr.appendChild(el("td", "code hide-sm", t.code || ""));
     var st = el("td", "c-status");
     var sw = el("span", "status-text " + (t.status || ""));
@@ -1597,7 +1742,9 @@ function renderTeamsTable() {
     }
     tr.appendChild(ci);
     var hintTd = el("td", "c-hints");
-    if (!hintBadges(t, hintTd)) hintTd.appendChild(el("span", "muted", "–"));
+    var anyHint = hintBadges(t, hintTd);
+    if (teamPhotoMissing(t)) { noPhotoBadge(hintTd); anyHint = true; }
+    if (!anyHint) hintTd.appendChild(el("span", "muted", "–"));
     tr.appendChild(hintTd);
     var act = el("td", "c-act");
     var actWrap = el("div", "row-actions");
@@ -1637,6 +1784,11 @@ function openDrawer(t) {
   sw.appendChild(document.createTextNode(" " + statusLabel(t.status)));
   body.appendChild(sw);
 
+  var photoHost = el("div", "dphoto");
+  photoHost.id = "drawerPhoto";
+  body.appendChild(photoHost);
+  renderDrawerPhoto(t);
+
   var grid = el("div", "dgrid");
   grid.appendChild(dfield("Code", el("span", "num", t.code || "–")));
   grid.appendChild(dfield("Batterie", batteryNode(t)));
@@ -1672,6 +1824,44 @@ function openDrawer(t) {
     drawer.querySelector(".scrim").animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250 });
   }
   $("drawerClose").focus();
+}
+function renderDrawerPhoto(t) {
+  var host = $("drawerPhoto");
+  if (!host) return;
+  host.textContent = "";
+  var frame = el("div", "frame");
+  var u = photoUrl(t);
+  if (u) {
+    var img = document.createElement("img");
+    img.alt = "Teamfoto " + (t.name || "");
+    img.src = u;
+    frame.appendChild(img);
+  } else {
+    frame.appendChild(el("span", "muted", teamPhotoMissing(t) ? "Noch kein Teamfoto aufgenommen." : "Teamfoto wird geladen …"));
+  }
+  host.appendChild(frame);
+  var acts = el("div", "dp-actions");
+  if (teamPhotoMissing(t)) {
+    noPhotoBadge(acts);
+  } else {
+    var reset = el("button", "btn secondary small", "Foto zurücksetzen");
+    reset.type = "button";
+    reset.addEventListener("click", function () {
+      if (!confirm("Teamfoto von „" + (t.name || "") + "“ zurücksetzen? Das Team muss ein neues Foto aufnehmen.")) return;
+      reset.disabled = true;
+      api("/api/orga/teams/" + encodeURIComponent(t.id) + "/photo", { method: "DELETE" })
+        .then(function () { return refresh(); })
+        .then(function () { var cur = currentTeam(t.id); if (cur && state.drawerTeamId === t.id) renderDrawerPhoto(cur); })
+        .catch(function (err) {
+          if (err.message === "Nicht angemeldet") return;
+          reset.disabled = false;
+          toast("Foto konnte nicht zurückgesetzt werden: " + err.message);
+        });
+    });
+    acts.appendChild(reset);
+    acts.appendChild(el("span", "muted", "Erzwingt eine neue Aufnahme durch das Team."));
+  }
+  host.appendChild(acts);
 }
 function closeDrawer() {
   state.drawerTeamId = null;

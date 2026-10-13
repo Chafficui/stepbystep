@@ -13,6 +13,7 @@ import {
 import { config } from '../config.js';
 import { rateLimit } from '../ratelimit.js';
 import { haversineKm } from '../geo.js';
+import { deletePhotoFile, sendTeamPhoto } from './teamphoto.js';
 import { orgaEventUpdate } from './event.js';
 
 interface EventFullRow {
@@ -131,9 +132,13 @@ export async function orgaRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.get('/orga/teams', async (_request, reply) => {
-    const teams = await query<{ id: string; name: string; code: string; status: string }>(
-      'SELECT id, name, code, status FROM team ORDER BY name'
-    );
+    const teams = await query<{
+      id: string;
+      name: string;
+      code: string;
+      status: string;
+      photo_updated_at: Date | null;
+    }>('SELECT id, name, code, status, photo_updated_at FROM team ORDER BY name');
     const participants = await query<{
       team_id: string;
       id: string;
@@ -154,6 +159,7 @@ export async function orgaRoutes(app: FastifyInstance): Promise<void> {
         name: t.name,
         code: t.code,
         status: t.status,
+        photo_updated_at: t.photo_updated_at?.toISOString() ?? null,
         participants: byTeam.get(t.id) ?? [],
       })),
     });
@@ -263,9 +269,13 @@ export async function orgaRoutes(app: FastifyInstance): Promise<void> {
     const endTime = new Date(ev.start_time.getTime() + ev.duration_h * 3600_000);
     const eventRunning = now.getTime() < endTime.getTime();
 
-    const teams = await query<{ id: string; name: string; code: string; status: string }>(
-      'SELECT id, name, code, status FROM team ORDER BY name'
-    );
+    const teams = await query<{
+      id: string;
+      name: string;
+      code: string;
+      status: string;
+      photo_updated_at: Date | null;
+    }>('SELECT id, name, code, status, photo_updated_at FROM team ORDER BY name');
     const lastPoints = await query<{
       team_id: string;
       lat: number;
@@ -340,6 +350,7 @@ export async function orgaRoutes(app: FastifyInstance): Promise<void> {
         name: t.name,
         code: t.code,
         status: t.status,
+        photo_updated_at: t.photo_updated_at?.toISOString() ?? null,
         battery: lp?.battery ?? null,
         minutes_since_last_point: minutesSinceLastPoint,
         last_point: lp
@@ -537,6 +548,35 @@ export async function orgaRoutes(app: FastifyInstance): Promise<void> {
       .header('Content-Length', size);
     void reply.send(createReadStream(filePath));
     return reply;
+  });
+
+  app.get('/orga/teams/:id/photo', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    if (!uuid.safeParse(id).success) {
+      void reply.code(400).send({ error: 'Ungültige Eingabe' });
+      return;
+    }
+    await sendTeamPhoto(id, reply);
+  });
+
+  // Orga can force a re-take (e.g. unsuitable photo) by clearing the photo.
+  app.delete('/orga/teams/:id/photo', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    if (!uuid.safeParse(id).success) {
+      void reply.code(400).send({ error: 'Ungültige Eingabe' });
+      return;
+    }
+    const prev = await query<{ photo_path: string | null }>(
+      'SELECT photo_path FROM team WHERE id = $1',
+      [id]
+    );
+    if (prev.rows.length === 0) {
+      void reply.code(404).send({ error: 'Nicht gefunden' });
+      return;
+    }
+    await query('UPDATE team SET photo_path = NULL, photo_updated_at = NULL WHERE id = $1', [id]);
+    await deletePhotoFile(prev.rows[0].photo_path);
+    void reply.send({ ok: true });
   });
 
   app.post('/orga/alerts/:id/resolve', async (request, reply) => {
