@@ -151,6 +151,84 @@ d('API integration', () => {
     expect(old.statusCode).toBe(401);
   });
 
+  it('join: same code + same name from a new device reclaims the slot instead of 409', async () => {
+    const team = await createTeam();
+    const aliceFirst = await app.inject({
+      method: 'POST',
+      url: '/api/join',
+      remoteAddress: '10.0.4.2',
+      payload: {
+        code: team.code,
+        display_name: 'Alice',
+        device_id: '11111111-1111-4111-8111-111111111111',
+      },
+    });
+    expect(aliceFirst.statusCode).toBe(200);
+    const bob = await app.inject({
+      method: 'POST',
+      url: '/api/join',
+      remoteAddress: '10.0.4.2',
+      payload: {
+        code: team.code,
+        display_name: 'Bob',
+        device_id: '22222222-2222-4222-8222-222222222222',
+      },
+    });
+    expect(bob.statusCode).toBe(200);
+    const aliceToken1 = (aliceFirst.json() as { token: string }).token;
+
+    // Team is full (2/2). Alice gets a new phone (new device_id) and rejoins
+    // with the same code + name, different case — must reclaim her slot
+    // rather than hit the 409 "Team ist bereits voll".
+    const aliceSecond = await app.inject({
+      method: 'POST',
+      url: '/api/join',
+      remoteAddress: '10.0.4.3',
+      payload: {
+        code: team.code,
+        display_name: 'alice',
+        device_id: '33333333-3333-4333-8333-333333333333',
+      },
+    });
+    expect(aliceSecond.statusCode).toBe(200);
+    const body = aliceSecond.json() as { token: string; display_name: string };
+    expect(body.display_name).toBe('Alice');
+    const aliceToken2 = body.token;
+
+    // Old phone's token is now invalid; new phone's token works.
+    const oldMe = await app.inject({
+      method: 'GET',
+      url: '/api/me',
+      headers: { authorization: `Bearer ${aliceToken1}` },
+    });
+    expect(oldMe.statusCode).toBe(401);
+    const newMe = await app.inject({
+      method: 'GET',
+      url: '/api/me',
+      headers: { authorization: `Bearer ${aliceToken2}` },
+    });
+    expect(newMe.statusCode).toBe(200);
+    expect((newMe.json() as { display_name: string }).display_name).toBe('Alice');
+
+    // Still exactly 2 participants (reclaimed, not a third slot) and Bob
+    // is untouched.
+    const login = await app.inject({
+      method: 'POST',
+      url: '/api/orga/login',
+      payload: { password: ORGA_PASSWORD },
+    });
+    const orgaToken = (login.json() as { token: string }).token;
+    const list = await app.inject({
+      method: 'GET',
+      url: '/api/orga/teams',
+      headers: { authorization: `Bearer ${orgaToken}` },
+    });
+    const teams = (list.json() as { teams: { id: string; participants: { display_name: string }[] }[] }).teams;
+    const found = teams.find((t) => t.id === team.id)!;
+    expect(found.participants).toHaveLength(2);
+    expect(found.participants.map((p) => p.display_name).sort()).toEqual(['Alice', 'Bob']);
+  });
+
   it('rate limit: 11 joins within a minute -> 429', async () => {
     const team = await createTeam();
     let lastCode = 0;
