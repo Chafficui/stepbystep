@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../brand/sbs_colors.dart';
+import '../brand/sbs_theme.dart';
+import '../brand/sbs_widgets.dart';
 import '../core/slot_calc.dart';
 import '../db/app_database.dart';
 import '../models/event_config.dart';
@@ -120,93 +123,173 @@ class _CheckinScreenState extends State<CheckinScreen> {
         .getSingleOrNull();
   }
 
-  String _fmtLocal(DateTime utc) =>
-      DateFormat('dd.MM. HH:mm').format(utc.toLocal());
-
   @override
   Widget build(BuildContext context) {
     final config = widget.config;
     final now = DateTime.now().toUtc();
-    final over = config.isOver(now);
-    final nextDue = _nextDue();
-    final slot = SlotCalc.slotFor(now, config.startTime, config.checkinIntervalMin);
+    return CheckinView(
+      nextDue: _nextDue(),
+      now: now,
+      intervalMin: config.checkinIntervalMin,
+      slot: SlotCalc.slotFor(now, config.startTime, config.checkinIntervalMin),
+      unsentCheckins: _stats.unsentCheckins,
+      over: config.isOver(now),
+      capturing: _capturing,
+      hasLast: _lastCheckinId != null,
+      lastSent: _lastCheckinSent ?? false,
+      onCapture: _capture,
+    );
+  }
+}
 
-    return Center(
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        shrinkWrap: true,
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
+/// Präsentation des Check-in-Tabs (reine Daten, testbar).
+class CheckinView extends StatelessWidget {
+  const CheckinView({
+    super.key,
+    required this.nextDue,
+    required this.now,
+    required this.intervalMin,
+    required this.slot,
+    required this.unsentCheckins,
+    required this.over,
+    required this.capturing,
+    required this.hasLast,
+    required this.lastSent,
+    required this.onCapture,
+  });
+
+  final DateTime? nextDue;
+  final DateTime now;
+  final int intervalMin;
+  final int slot;
+  final int unsentCheckins;
+  final bool over;
+  final bool capturing;
+  final bool hasLast;
+  final bool lastSent;
+  final void Function(String mediaType) onCapture;
+
+  @override
+  Widget build(BuildContext context) {
+    final due = nextDue;
+    double progress = 0;
+    String countdown = '–';
+    if (due != null) {
+      var left = due.difference(now);
+      if (left.isNegative) left = Duration.zero;
+      final total = intervalMin * 60;
+      progress = total <= 0 ? 0 : (1 - left.inSeconds / total).clamp(0.0, 1.0);
+      final h = left.inHours;
+      final m = left.inMinutes.remainder(60).toString().padLeft(2, '0');
+      final s = left.inSeconds.remainder(60).toString().padLeft(2, '0');
+      countdown = '$h:$m:$s';
+    }
+    final children = <Widget>[
+      SbsCard(
+        child: Row(
+          children: [
+            StopwatchRing(
+              size: 92,
+              progress: progress,
+              strokeWidth: 5,
+              ticks: 0,
+              child: Text(over ? '–' : '#$slot', style: SbsText.number(20)),
+            ),
+            const SizedBox(width: 18),
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    nextDue == null
-                        ? 'Kein weiterer Check-in fällig'
-                        : 'Nächster Check-in fällig: ${_fmtLocal(nextDue)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
+                  const SbsLabel('Nächster Check-in'),
                   const SizedBox(height: 4),
-                  Text('Aktueller Slot: $slot'),
-                  Text('Offene Check-ins: ${_stats.unsentCheckins}'),
+                  if (due == null)
+                    Text('Kein weiterer Check-in fällig',
+                        style: SbsText.body(weight: FontWeight.w600))
+                  else ...[
+                    Text(countdown, style: SbsText.number(30)),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Nächster Check-in fällig: '
+                      '${DateFormat('dd.MM. HH:mm').format(due.toLocal())}',
+                      style: SbsText.body(size: 13, color: SbsColors.fgMuted),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Text(
+                    'Aktueller Slot: $slot · Offen: $unsentCheckins',
+                    style: SbsText.body(size: 13, color: SbsColors.fgMuted),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 16),
+      if (over)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: Text(
+            'Das Event ist beendet – Check-ins werden nicht mehr benötigt.',
+            textAlign: TextAlign.center,
+            style: SbsText.body(color: SbsColors.fgMuted),
+          ),
+        )
+      else ...[
+        FilledButton.icon(
+          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(72)),
+          icon: const Icon(Icons.photo_camera, size: 28),
+          label: Text('Foto aufnehmen'.toUpperCase(),
+              style: SbsText.display(18, color: SbsColors.onFg)),
+          onPressed: capturing ? null : () => onCapture('photo'),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(72)),
+          icon: const Icon(Icons.videocam_outlined, size: 28),
+          label: Text('Video (max. 15 Sek.)'.toUpperCase(),
+              style: SbsText.display(18)),
+          onPressed: capturing ? null : () => onCapture('video'),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Nur Kamera — keine Galerie. Das Video wird maximal 15 Sekunden '
+          'lang aufgenommen.',
+          textAlign: TextAlign.center,
+          style: SbsText.body(size: 12.5, color: SbsColors.fgFaint),
+        ),
+        if (hasLast)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: SbsCard(
+              padding: const EdgeInsets.all(12),
+              borderColor: lastSent ? SbsColors.ok : SbsColors.warn,
+              child: Row(
+                children: [
+                  Icon(lastSent ? Icons.check_circle : Icons.schedule,
+                      size: 18,
+                      color: lastSent ? SbsColors.ok : SbsColors.warn),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      lastSent
+                          ? 'Check-in gesendet ✓'
+                          : 'Check-in gespeichert – wird gesendet',
+                      style: SbsText.body(
+                        weight: FontWeight.w600,
+                        color: lastSent ? SbsColors.ok : SbsColors.warn,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          if (over) ...[
-            const Text(
-              'Das Event ist beendet – Check-ins werden nicht mehr '
-              'benötigt.',
-              textAlign: TextAlign.center,
-            ),
-          ] else ...[
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(72),
-              ),
-              icon: const Icon(Icons.photo_camera, size: 32),
-              label: const Text('Foto aufnehmen', style: TextStyle(fontSize: 20)),
-              onPressed: _capturing ? null : () => _capture('photo'),
-            ),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(72),
-              ),
-              icon: const Icon(Icons.videocam, size: 32),
-              label: const Text('Video aufnehmen (max. 15 Sek.)',
-                  style: TextStyle(fontSize: 20)),
-              onPressed: _capturing ? null : () => _capture('video'),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Nur Kamera — keine Galerie. Das Video wird maximal 15 '
-              'Sekunden lang aufgenommen.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            if (_lastCheckinId != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(
-                  (_lastCheckinSent ?? false)
-                      ? 'Check-in gesendet ✓'
-                      : 'Check-in gespeichert – wird gesendet',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: (_lastCheckinSent ?? false)
-                        ? Colors.green
-                        : Colors.orange,
-                  ),
-                ),
-              ),
-          ],
-        ],
-      ),
+      ],
+    ];
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: sbsStagger(children),
     );
   }
 }

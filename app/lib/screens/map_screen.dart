@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' hide Path;
 
+import '../brand/sbs_colors.dart';
 import '../core/geo.dart';
 import '../models/event_config.dart';
 import '../state/services.dart';
@@ -90,18 +91,48 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     final config = widget.config;
     final now = DateTime.now();
-    final start = _startPoint(config, now);
-    final current = _currentPosition;
+    return MapView(
+      track: _track,
+      start: _startPoint(config, now),
+      current: _currentPosition,
+      loaded: _loaded,
+    );
+  }
+}
 
-    // Karte: Startpunkt (falls bekannt), sonst aktuelle Position, sonst
-    // erster Track-Punkt; ohne Koordinaten neutraler Fallback-Zoom.
-    final center = start ?? current ?? (_track.isNotEmpty ? _track.first : null);
+/// Präsentation der Karte (reine Daten, testbar). Dunkle Kacheln via
+/// invertierter Graustufen-Matrix; Attribution bleibt sichtbar.
+class MapView extends StatelessWidget {
+  const MapView({
+    super.key,
+    required this.track,
+    required this.start,
+    required this.current,
+    required this.loaded,
+  });
+
+  final List<LatLng> track;
+  final LatLng? start;
+  final LatLng? current;
+  final bool loaded;
+
+  /// Invertiert + entsättigt + abgedunkelt: OSM-Kacheln im Dunkel-Look.
+  static const ColorFilter darkTiles = ColorFilter.matrix(<double>[
+    -0.19, -0.64, -0.065, 0, 232, //
+    -0.19, -0.64, -0.065, 0, 233, //
+    -0.19, -0.64, -0.065, 0, 230, //
+    0, 0, 0, 1, 0,
+  ]);
+
+  @override
+  Widget build(BuildContext context) {
+    final center = start ?? current ?? (track.isNotEmpty ? track.first : null);
 
     // Peilung Start -> aktuelle Position für den Richtungs-Pfeil.
     double? bearing;
     if (start != null && current != null) {
-      bearing = Geo.bearingDeg(
-          start.latitude, start.longitude, current.latitude, current.longitude);
+      bearing = Geo.bearingDeg(start!.latitude, start!.longitude,
+          current!.latitude, current!.longitude);
     }
 
     return Stack(
@@ -110,19 +141,22 @@ class _MapScreenState extends State<MapScreen> {
           options: MapOptions(
             initialCenter: center ?? const LatLng(51.165691, 10.451526),
             initialZoom: center != null ? 15.0 : 6.0,
+            backgroundColor: SbsColors.bg,
           ),
           children: [
             TileLayer(
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'de.example.stepbystep',
+              tileBuilder: (context, tile, image) =>
+                  ColorFiltered(colorFilter: darkTiles, child: tile),
             ),
             PolylineLayer(
               polylines: [
-                if (_track.length >= 2)
+                if (track.length >= 2)
                   Polyline(
-                    points: _track,
+                    points: track,
                     strokeWidth: 4,
-                    color: Colors.blue,
+                    color: SbsColors.fg,
                   ),
               ],
             ),
@@ -130,24 +164,29 @@ class _MapScreenState extends State<MapScreen> {
               markers: [
                 if (start != null)
                   Marker(
-                    point: start,
+                    point: start!,
                     width: 36,
                     height: 36,
-                    child: const Icon(Icons.flag, color: Colors.green, size: 32),
+                    child: const Icon(Icons.flag,
+                        color: SbsColors.ok, size: 32),
                   ),
                 if (current != null)
                   Marker(
-                    point: current,
+                    point: current!,
                     width: 36,
                     height: 36,
                     child: const Icon(Icons.my_location,
-                        color: Colors.red, size: 32),
+                        color: SbsColors.signal, size: 32),
                   ),
               ],
             ),
+            const SimpleAttributionWidget(
+              source: Text('OpenStreetMap-Mitwirkende'),
+              backgroundColor: Color(0xCC050605),
+            ),
           ],
         ),
-        if (!_loaded)
+        if (!loaded)
           const Positioned.fill(
             child: IgnorePointer(
               child: Center(child: CircularProgressIndicator()),
@@ -174,10 +213,10 @@ class _BearingArrow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: SbsColors.surface,
         shape: BoxShape.circle,
-        boxShadow: [BoxShadow(blurRadius: 4, color: Colors.black26)],
+        border: Border.all(color: SbsColors.lineStrong),
       ),
       padding: const EdgeInsets.all(6),
       child: SizedBox(
@@ -199,7 +238,7 @@ class _ArrowPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.blue
+      ..color = SbsColors.fg
       ..style = PaintingStyle.fill
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;

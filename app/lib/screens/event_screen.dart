@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
@@ -16,10 +15,16 @@ import '../state/session_store.dart';
 import '../tracking/tracking_controller.dart';
 import '../tracking/tracking_service.dart';
 import '../tracking/upload_service.dart';
+import '../brand/sbs_colors.dart';
+import '../brand/sbs_logo.dart';
+import '../brand/sbs_theme.dart';
+import '../core/slot_calc.dart';
 import 'checkin_screen.dart';
 import 'end_screen.dart';
+import 'live_tab.dart';
 import 'map_screen.dart';
 import 'rank_screen.dart';
+import 'sos_bar.dart';
 
 /// Wartezimmer + laufendes Event (Shell).
 ///
@@ -86,24 +91,32 @@ class _EventScreenState extends State<EventScreen> {
   UploadStats _stats = const UploadStats(
       unsentPoints: 0, unsentAlerts: 0, unsentCheckins: 0);
 
+  /// Live-Werte für das Status-Sheet (aktualisiert bei jeder Änderung).
+  late final ValueNotifier<StatusData> _statusN =
+      ValueNotifier<StatusData>(_statusData());
+
   @override
   void initState() {
     super.initState();
     _loadEvent();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
+      _syncStatus();
       _checkLastAlertSent();
     });
     _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
       if (!mounted) return;
       setState(
           () => _online = !results.contains(ConnectivityResult.none));
+      _syncStatus();
     });
     _trackingSub = _tracking.state.listen((s) {
       if (mounted) setState(() => _trackingState = s);
+      _syncStatus();
     });
     _statsSub = _upload.stats.listen((s) {
       if (mounted) setState(() => _stats = s);
+      _syncStatus();
     });
   }
 
@@ -113,6 +126,7 @@ class _EventScreenState extends State<EventScreen> {
     _connectivitySub?.cancel();
     _trackingSub?.cancel();
     _statsSub?.cancel();
+    _statusN.dispose();
     super.dispose();
   }
 
@@ -143,23 +157,6 @@ class _EventScreenState extends State<EventScreen> {
     }
   }
 
-  String _fmt(Duration d) {
-    final h = d.inHours;
-    final m = d.inMinutes.remainder(60);
-    final s = d.inSeconds.remainder(60);
-    return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-  }
-
-  String _localTime(DateTime utc) =>
-      DateFormat('dd.MM. HH:mm').format(utc.toLocal());
-
-  /// Letzter erfolgreicher Upload, lokal als HH:mm (oder „noch keine").
-  String _lastUploadLabel() {
-    final t = _stats.lastSuccessAt;
-    if (t == null) return 'Letzter Upload: noch keine';
-    return 'Letzter Upload: ${DateFormat('HH:mm').format(t.toLocal())}';
-  }
-
   /// Stale-Warnung: Tracking aktiv, aber > 10 min kein neuer Punkt.
   bool get _staleTracking {
     if (_trackingState.kind != TrackingStateKind.running) return false;
@@ -169,18 +166,6 @@ class _EventScreenState extends State<EventScreen> {
     if (last == null) return false;
     return DateTime.now().toUtc().difference(last.toUtc()) >
         const Duration(minutes: 10);
-  }
-
-  String get _trackingStatusLabel {
-    final s = _trackingState;
-    switch (s.kind) {
-      case TrackingStateKind.running:
-        return 'Tracking aktiv';
-      case TrackingStateKind.stopped:
-        return 'Tracking pausiert';
-      case TrackingStateKind.error:
-        return 'Fehler: ${s.message ?? 'unbekannt'}';
-    }
   }
 
   Future<void> _toggleTracking() async {
@@ -220,24 +205,47 @@ class _EventScreenState extends State<EventScreen> {
     }
   }
 
+  StatusData _statusData() => StatusData(
+        tracking: _trackingState,
+        online: _online,
+        stats: _stats,
+        batteryPercent: _battery.currentPercent,
+        stale: _staleTracking,
+      );
+
+  void _syncStatus() {
+    if (!mounted) return;
+    _statusN.value = _statusData();
+  }
+
+  void _openStatusSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (_) => StatusSheet(data: _statusN),
+    );
+  }
+
+  /// Nächster fälliger Check-in (erste Erinnerungszeit nach jetzt).
+  DateTime? _nextCheckin(EventConfig config) {
+    final now = DateTime.now().toUtc();
+    for (final t in SlotCalc.reminderTimes(config)) {
+      if (t.isAfter(now)) return t;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final config = _config;
     final now = DateTime.now();
 
     // Uhren-Drift-Warnung: |deviceNow - server_now| > 60 s.
-    final driftWarning =
-        config != null && config.serverDrift(now).abs() > const Duration(seconds: 60);
-
-    final waiting = config != null &&
-        (config.isBeforeReveal(now) ||
-            (config.isRunning(now) &&
-                now.toUtc().isBefore(config.startTime.toUtc())));
+    final driftWarning = config != null &&
+        config.serverDrift(now).abs() > const Duration(seconds: 60);
 
     final running = _trackingState.kind == TrackingStateKind.running;
-    final over = config != null && config.isOver(now);
 
-    // Tab-Inhalt: Event-Status (Start-Tab), Karte, Check-in, Rangliste.
     Widget tabContent;
     switch (_selectedTab) {
       case 1:
@@ -256,235 +264,40 @@ class _EventScreenState extends State<EventScreen> {
         tabContent = const RankScreen();
         break;
       default:
-        tabContent = RefreshIndicator(
+        tabContent = LiveTab(
+          config: config,
+          now: now,
+          status: _statusData(),
+          error: _error,
+          driftWarning: driftWarning,
+          nextCheckin: config == null ? null : _nextCheckin(config),
           onRefresh: _loadEvent,
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(_error!,
-                      style: const TextStyle(color: Colors.red)),
-                ),
-              if (driftWarning)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 12),
-                  child: Card(
-                    color: Colors.amber,
-                    child: Padding(
-                      padding: EdgeInsets.all(12),
-                      child: Text(
-                          '⚠️ Uhrzeit des Handys prüfen – sie weicht deutlich '
-                          'von der Serverzeit ab.'),
-                    ),
-                  ),
-                ),
-              if (_staleTracking)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 12),
-                  child: Card(
-                    color: Colors.red,
-                    child: Padding(
-                      padding: EdgeInsets.all(12),
-                      child: Text(
-                          '⚠️ Seit 10 Minuten kein neuer Punkt – Tracking '
-                          'prüfen!',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ),
-              if (config == null)
-                const Center(child: CircularProgressIndicator())
-              else ...[
-                if (over) ...[
-                  // Ende-Banner + Abschluss-Seite (inline). Tracking läuft
-                  // bewusst weiter (Daten für die Abholung).
-                  const Card(
-                    color: Colors.deepOrange,
-                    child: Padding(
-                      padding: EdgeInsets.all(12),
-                      child: Text(
-                          '🏁 Das Event ist beendet. Danke fürs Mitmachen!',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  EndScreenBody(tracking: _tracking, isRunning: running),
-                ] else ...[
-                  if (config.isBeforeReveal(now))
-                    _CountdownCard(
-                      title: 'Enthüllung der Route in',
-                      target: config.revealTime,
-                      fmt: _fmt,
-                      subtitle:
-                          'Enthüllung: ${_localTime(config.revealTime)}',
-                    )
-                  else if (now.toUtc()
-                      .isBefore(config.startTime.toUtc()))
-                    _CountdownCard(
-                      title: 'Start in',
-                      target: config.startTime,
-                      fmt: _fmt,
-                      subtitle: 'Start: ${_localTime(config.startTime)}',
-                    )
-                  else
-                    _CountdownCard(
-                      title: 'Event endet in',
-                      target: config.endTime,
-                      fmt: _fmt,
-                      subtitle: 'Ende: ${_localTime(config.endTime)}',
-                    ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Check-ins: alle ${config.checkinIntervalMin} Minuten '
-                    '(Fenster ${config.checkinWindowMin} Min). '
-                    'Orga-Telefon: ${config.orgaPhone}',
-                  ),
-                  const SizedBox(height: 16),
-                  if (waiting || config.isRunning(now))
-                    FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(64),
-                      ),
-                      icon: Icon(running ? Icons.stop : Icons.play_arrow),
-                      label: Text(
-                        running ? 'Tracking stoppen' : 'Tracking starten',
-                        style: const TextStyle(fontSize: 20),
-                      ),
-                      onPressed: _toggleTracking,
-                    ),
-                ],
-              ],
-            ],
-          ),
+          onToggleTracking: _toggleTracking,
+          onAbort: _abort,
+          onOpenStatus: _openStatusSheet,
+          onOpenCheckin: () => setState(() => _selectedTab = 2),
+          // Tracking läuft nach Event-Ende bewusst weiter (Abholung).
+          endSection: EndScreenBody(tracking: _tracking, isRunning: running),
         );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(config?.name ?? 'Event'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Icon(
-              _online ? Icons.wifi : Icons.wifi_off,
-              color: _online ? Colors.green : Colors.red,
-            ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(child: tabContent),
-          // Immer sichtbar: Status-Karte und SOS-Bereich.
-          _persistentStatusArea(config, over, running),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedTab,
-        onDestinationSelected: (i) => setState(() => _selectedTab = i),
-        destinations: const [
-          NavigationDestination(
-              icon: Icon(Icons.event), label: 'Event'),
-          NavigationDestination(icon: Icon(Icons.map), label: 'Karte'),
-          NavigationDestination(
-              icon: Icon(Icons.photo_camera), label: 'Check-in'),
-          NavigationDestination(
-              icon: Icon(Icons.leaderboard), label: 'Rangliste'),
-        ],
-      ),
-    );
-  }
-
-  /// Immer sichtbarer Bereich unter dem Tab-Inhalt: Status-Karte
-  /// (Tracking/Upload/Akku) und der SOS-/Abbruch-Bereich.
-  Widget _persistentStatusArea(EventConfig? config, bool over, bool running) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(_trackingStatusLabel,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text(
-                      'Ungesendete Punkte: ${_stats.unsentPoints} · '
-                      'Alarme: ${_stats.unsentAlerts} · '
-                      'Check-ins: ${_stats.unsentCheckins}'),
-                  const SizedBox(height: 4),
-                  Text(_lastUploadLabel()),
-                  if (_battery.currentPercent != null)
-                    Text('Akkustand: ${_battery.currentPercent}%'),
-                ],
-              ),
-            ),
-          ),
-          _sosArea(config),
-        ],
-      ),
-    );
-  }
-
-  /// SOS-Bereich: Hint, Halte-Button (2 s) und Abbruch-Button mit
-  /// Statuszeile. Schreibt IMMER zuerst lokal (offline-fähig).
-  Widget _sosArea(EventConfig? config) {
     String? statusText;
     if (_lastAlertId != null) {
       statusText = (_lastAlertSent ?? false)
           ? 'SOS gesendet'
           : 'SOS gespeichert – wird gesendet, sobald Netz da ist';
     }
-    return Card(
-      color: Colors.red.shade50,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            const Text(
-              'Bei akuter Gefahr zuerst 112 anrufen!',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: _HoldToTriggerButton(
-                    onTriggered: () => _triggerAlert('sos'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(56),
-                    ),
-                    icon: const Icon(Icons.flag),
-                    label: const Text('Aufgeben und\nabholen lassen',
-                        textAlign: TextAlign.center),
-                    onPressed: _abort,
-                  ),
-                ),
-              ],
-            ),
-            if (statusText != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(statusText,
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: (_lastAlertSent ?? false)
-                            ? Colors.green
-                            : Colors.orange)),
-              ),
-          ],
-        ),
+
+    return EventShell(
+      title: config?.name ?? 'Event',
+      online: _online,
+      selectedTab: _selectedTab,
+      onTab: (i) => setState(() => _selectedTab = i),
+      body: KeyedSubtree(key: ValueKey(_selectedTab), child: tabContent),
+      sosBar: SosBar(
+        onTriggered: () => _triggerAlert('sos'),
+        statusText: statusText,
+        statusSent: _lastAlertSent ?? false,
       ),
     );
   }
@@ -588,157 +401,110 @@ class _EventScreenState extends State<EventScreen> {
   }
 }
 
-class _CountdownCard extends StatelessWidget {
-  const _CountdownCard({
+
+/// Rahmen des Event-Screens: AppBar, Tab-Inhalt, SOS-Leiste, Navigation.
+class EventShell extends StatelessWidget {
+  const EventShell({
+    super.key,
     required this.title,
-    required this.target,
-    required this.fmt,
-    required this.subtitle,
+    required this.online,
+    required this.selectedTab,
+    required this.onTab,
+    required this.body,
+    required this.sosBar,
   });
 
   final String title;
-  final DateTime target;
-  final String Function(Duration) fmt;
-  final String subtitle;
+  final bool online;
+  final int selectedTab;
+  final ValueChanged<int> onTab;
+  final Widget body;
+  final Widget sosBar;
 
   @override
   Widget build(BuildContext context) {
-    final remaining = target.toLocal().difference(DateTime.now());
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+    return Scaffold(
+      appBar: AppBar(
+        titleSpacing: 16,
+        title: Row(
           children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text(
-              remaining.isNegative ? 'Jetzt!' : fmt(remaining),
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
+            const SbsLogo(width: 30),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title.toUpperCase(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: SbsText.display(18),
+              ),
             ),
-            const SizedBox(height: 4),
-            Text(subtitle),
           ],
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: _OnlinePill(online: online),
+          ),
+        ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1),
+        ),
+      ),
+      body: Column(
+        children: [
+          Expanded(child: body),
+          // Auf jedem Tab erreichbar: SOS-Leiste.
+          sosBar,
+        ],
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: selectedTab,
+        onDestinationSelected: onTab,
+        destinations: const [
+          NavigationDestination(
+              icon: Icon(Icons.timer_outlined),
+              selectedIcon: Icon(Icons.timer),
+              label: 'Live'),
+          NavigationDestination(
+              icon: Icon(Icons.map_outlined),
+              selectedIcon: Icon(Icons.map),
+              label: 'Karte'),
+          NavigationDestination(
+              icon: Icon(Icons.photo_camera_outlined),
+              selectedIcon: Icon(Icons.photo_camera),
+              label: 'Check-in'),
+          NavigationDestination(
+              icon: Icon(Icons.leaderboard_outlined),
+              selectedIcon: Icon(Icons.leaderboard),
+              label: 'Rang'),
+        ],
       ),
     );
   }
 }
 
-/// SOS-Halte-Button: Auslösen erst nach 2 Sekunden Halten. Loslassen oder
-/// Abbruch vorher setzt den Fortschritt zurück (nichts passiert).
-/// Visualisierung: rote Füllung wächst über die Haltezeit.
-class _HoldToTriggerButton extends StatefulWidget {
-  const _HoldToTriggerButton({
-    required this.onTriggered,
-  });
+class _OnlinePill extends StatelessWidget {
+  const _OnlinePill({required this.online});
 
-  final VoidCallback onTriggered;
-  static const holdDuration = Duration(seconds: 2);
-
-  @override
-  State<_HoldToTriggerButton> createState() => _HoldToTriggerButtonState();
-}
-
-class _HoldToTriggerButtonState extends State<_HoldToTriggerButton> {
-  static const int _tickMs = 50;
-
-  Timer? _timer;
-  double _progress = 0.0;
-  bool _fired = false;
-
-  bool get _holding => _timer != null;
-
-  void _start() {
-    if (_holding) return;
-    setState(() {
-      _progress = 0.0;
-      _fired = false;
-    });
-    _timer = Timer.periodic(
-      const Duration(milliseconds: _tickMs),
-      (t) {
-        final p = (t.tick * _tickMs) /
-            _HoldToTriggerButton.holdDuration.inMilliseconds;
-        if (p >= 1.0) {
-          _cancelTimer();
-          if (mounted) {
-            setState(() {
-              _progress = 1.0;
-              _fired = true;
-            });
-          }
-          widget.onTriggered();
-          // Nach kurzer Anzeige zurücksetzen.
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted && !_holding) setState(() => _progress = 0.0);
-          });
-        } else if (mounted) {
-          setState(() => _progress = p);
-        }
-      },
-    );
-  }
-
-  void _cancelTimer() {
-    _timer?.cancel();
-    _timer = null;
-  }
-
-  void _cancel() {
-    if (!_holding) return;
-    _cancelTimer();
-    if (mounted && !_fired) {
-      setState(() => _progress = 0.0);
-    }
-  }
-
-  @override
-  void dispose() {
-    _cancelTimer();
-    super.dispose();
-  }
+  final bool online;
 
   @override
   Widget build(BuildContext context) {
+    final c = online ? SbsColors.ok : SbsColors.signal;
     return Semantics(
-      label: 'SOS senden: zwei Sekunden gedrückt halten',
-      button: true,
-      child: Listener(
-        onPointerDown: (_) => _start(),
-        onPointerUp: (_) => _cancel(),
-        onPointerCancel: (_) => _cancel(),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: SizedBox(
-            height: 56,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Container(color: Colors.red.shade100),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: FractionallySizedBox(
-                    widthFactor: _progress.clamp(0.0, 1.0),
-                    child: Container(color: Colors.red),
-                  ),
-                ),
-                Center(
-                  child: Text(
-                    _holding ? 'Weiter halten …' : 'SOS halten (2 s)',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: _progress > 0.6 ? Colors.white : Colors.red.shade900,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      label: online ? 'Online' : 'Offline',
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
+          const SizedBox(width: 6),
+          Text((online ? 'Online' : 'Offline').toUpperCase(),
+              style: SbsText.label(color: c, size: 10.5)),
+        ],
       ),
     );
   }
