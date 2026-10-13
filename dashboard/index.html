@@ -1962,7 +1962,19 @@ function openDrawer(t) {
   ci.addEventListener("click", function () { openCheckins(t); });
   var mp = el("button", "btn secondary small", "Auf Karte zeigen"); mp.type = "button";
   mp.addEventListener("click", function () { closeDrawer(); focusTeam(t); });
-  acts.appendChild(ci); acts.appendChild(mp);
+  var del = el("button", "btn danger small", "Team löschen"); del.type = "button";
+  del.addEventListener("click", function () {
+    if (!confirm("Team „" + (t.name || "") + "“ wirklich endgültig löschen? Alle Positionsdaten, Check-ins und Alarme des Teams werden unwiderruflich entfernt.")) return;
+    del.disabled = true;
+    api("/api/orga/teams/" + encodeURIComponent(t.id), { method: "DELETE" })
+      .then(function () { closeDrawer(); return refresh(); })
+      .catch(function (err) {
+        if (err.message === "Nicht angemeldet") return;
+        del.disabled = false;
+        toast("Team konnte nicht gelöscht werden: " + err.message);
+      });
+  });
+  acts.appendChild(ci); acts.appendChild(mp); acts.appendChild(del);
   body.appendChild(acts);
 
   var sec = el("div", "dsection");

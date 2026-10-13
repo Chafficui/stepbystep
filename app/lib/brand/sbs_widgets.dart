@@ -248,11 +248,17 @@ class _SlideInState extends State<SlideIn> with SingleTickerProviderStateMixin {
 }
 
 /// Liste von Kindern mit gestaffeltem Einfahren (Spalte).
+///
+/// Jedes Kind sollte einen stabilen [Key] tragen, wenn die Liste sich je
+/// nach Ladezustand in Länge/Reihenfolge ändert: ohne Key matcht Flutter
+/// Elemente rein nach Position, sodass ein eingefügtes/entferntes Element
+/// alle nachfolgenden als "neu" ansieht und ihre Einfahr-Animation erneut
+/// abspielt.
 List<Widget> sbsStagger(List<Widget> children, {int start = 0}) {
   var i = start;
   return [
     for (final c in children)
-      if (c is SizedBox) c else SlideIn(index: i++, child: c),
+      if (c is SizedBox) c else SlideIn(key: c.key, index: i++, child: c),
   ];
 }
 
